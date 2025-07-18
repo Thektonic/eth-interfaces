@@ -59,6 +59,10 @@ func NewBaseInteractions(client simulated.Client, pk *ecdsa.PrivateKey, explorer
 	return &BaseInteractions{ctx, client, fromAddress, pk, nil, explorer}
 }
 
+func (b *BaseInteractions) BaseInteractions() *BaseInteractions {
+	return b
+}
+
 // SetDisperse initializes the disperse contract for multi-address fund transfers.
 func (b *BaseInteractions) SetDisperse(address string) error {
 	var err error

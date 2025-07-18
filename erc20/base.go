@@ -21,10 +21,14 @@ import (
 // IERC20AInteractions wraps NFT interactions using an underlying base interaction and an ERC20 session.
 
 type ERC20Interactions struct {
-	*base.BaseInteractions
-	ierc20Session *ERC20Burnable.ERC20BurnableSession
-	nftAddress    common.Address
-	callError     func(string, error) *base.CallError
+	*base.Interactions[*ERC20Burnable.ERC20BurnableSession]
+}
+
+type IERC20 interface {
+	GetAddress() common.Address
+	CheckSignatures(address common.Address, signatures []utils.Signature) error
+	GetSession() ERC20Burnable.ERC20BurnableSession
+	GetBaseInteractions() *base.BaseInteractions
 }
 
 // NewIERC20Interactions creates a new instance of IERC20AInteractions from a base interaction interface and an NFT contract address.
@@ -69,10 +73,13 @@ func NewIERC20Interactions(
 		return (baseInteractions.WrapCallError(ERC20Burnable.ERC20BurnableABI, field, err))
 	}
 
-	ierc20Asession := &ERC20Interactions{baseInteractions,
-		&ierc20Session,
-		address,
-		callError,
+	ierc20Asession := &ERC20Interactions{
+		&base.Interactions[*ERC20Burnable.ERC20BurnableSession]{
+			BaseInteractions: baseInteractions,
+			Session:          &ierc20Session,
+			Address:          address,
+			CallError:        callError,
+		},
 	}
 
 	if err := contractextension.SimulateCall(baseInteractions.Ctx, ERC20Burnable.ERC20BurnableABI, "name", ierc20Asession); err != nil {
@@ -84,55 +91,55 @@ func NewIERC20Interactions(
 
 // GetNFTAddress returns the NFT contract address.
 func (d *ERC20Interactions) GetAddress() common.Address {
-	return d.nftAddress
+	return d.Address
 }
 
 // GetSession returns the current session used for NFT interactions.
 func (d *ERC20Interactions) GetSession() ERC20Burnable.ERC20BurnableSession {
-	return *d.ierc20Session
+	return *d.Session
 }
 
 // GetBalance retrieves the balance of NFTs for the associated address.
 func (d *ERC20Interactions) GetBalance() (*big.Int, error) {
-	balance, err := d.ierc20Session.BalanceOf(d.Address)
+	balance, err := d.Session.BalanceOf(d.Address)
 	if err != nil {
-		return nil, d.callError("erc20.BalanceOf()", err)
+		return nil, d.CallError("erc20.BalanceOf()", err)
 	}
 	return balance, nil
 }
 
 // TransferTo transfers a specific token to another address after verifying ownership.
 func (d *ERC20Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	tx, err := d.ierc20Session.Transfer(to, amount)
+	tx, err := d.Session.Transfer(to, amount)
 	if err != nil {
-		return nil, d.callError("erc20.Transfer()", err)
+		return nil, d.CallError("erc20.Transfer()", err)
 	}
 	return tx, nil
 }
 
 // TotalSupply returns the total number of NFTs minted.
 func (d *ERC20Interactions) TotalSupply() (*big.Int, error) {
-	supply, err := d.ierc20Session.TotalSupply()
+	supply, err := d.Session.TotalSupply()
 	if err != nil {
-		return nil, d.callError("erc20.TotalSupply()", err)
+		return nil, d.CallError("erc20.TotalSupply()", err)
 	}
 	return supply, nil
 }
 
 // BalanceOf retrieves the NFT balance for a given owner.
 func (d *ERC20Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
-	balance, err := d.ierc20Session.BalanceOf(owner)
+	balance, err := d.Session.BalanceOf(owner)
 	if err != nil {
-		return nil, d.callError("erc20.BalanceOf()", err)
+		return nil, d.CallError("erc20.BalanceOf()", err)
 	}
 	return balance, nil
 }
 
 // Approve approves an address to transfer a specific token.
 func (d *ERC20Interactions) Approve(to common.Address, tokenID *big.Int) (*types.Transaction, error) {
-	tx, err := d.ierc20Session.Approve(to, tokenID)
+	tx, err := d.Session.Approve(to, tokenID)
 	if err != nil {
-		return nil, d.callError("erc20.Approve()", err)
+		return nil, d.CallError("erc20.Approve()", err)
 	}
 	return tx, nil
 }
@@ -152,26 +159,26 @@ func (d *ERC20Interactions) TokenMetaInfos() (*models.TokenMeta, error) {
 
 // Name returns the name of the NFT.
 func (d *ERC20Interactions) Name() (string, error) {
-	name, err := d.ierc20Session.Name()
+	name, err := d.Session.Name()
 	if err != nil {
-		return "", d.callError("erc20.Name()", err)
+		return "", d.CallError("erc20.Name()", err)
 	}
 	return name, nil
 }
 
 // Symbol returns the symbol of the NFT.
 func (d *ERC20Interactions) Symbol() (string, error) {
-	symbol, err := d.ierc20Session.Symbol()
+	symbol, err := d.Session.Symbol()
 	if err != nil {
-		return "", d.callError("erc20.Symbol()", err)
+		return "", d.CallError("erc20.Symbol()", err)
 	}
 	return symbol, nil
 }
 
 func (d *ERC20Interactions) Allowance(owner, spender common.Address) (*big.Int, error) {
-	allowance, err := d.ierc20Session.Allowance(owner, spender)
+	allowance, err := d.Session.Allowance(owner, spender)
 	if err != nil {
-		return nil, d.callError("erc20.Allowance()", err)
+		return nil, d.CallError("erc20.Allowance()", err)
 	}
 	return allowance, nil
 }
