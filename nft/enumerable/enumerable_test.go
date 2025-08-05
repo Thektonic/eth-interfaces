@@ -9,20 +9,25 @@ import (
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/nft/enumerable"
-	"github.com/Thektonic/eth-interfaces/utils"
+	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/stretchr/testify/assert"
 )
 
-// Test_GetAddressOwnedTokens tests retrieval of tokens owned by an address and validates that the number of tokens matches the balance.
+// Test_GetAddressOwnedTokens tests retrieval of tokens owned by an address and validates
+// that the number of tokens matches the balance.
 func Test_GetAddressOwnedTokens(t *testing.T) {
-	backend, auth, contractAddr, privKey, err := utils.SetupBlockchain(t,
+	backend, auth, contractAddr, privKey, err := testingtools.SetupBlockchain(t,
 		ERC721Complete.ERC721CompleteABI,
 		ERC721Complete.ERC721CompleteBin,
 		"MyNFT",
 		"MNFT",
 	)
 	assert.Nil(t, err)
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	baseinteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nftA, err := nft.NewERC721Interactions(baseinteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})
@@ -42,9 +47,10 @@ func Test_GetAddressOwnedTokens(t *testing.T) {
 	assert.Equal(t, balance.Int64(), int64(len(tokens)), "number of tokens should equal balance")
 }
 
-// Test_GetAllTokenIDs tests retrieval of all token IDs and validates that the total supply equals the number of tokens returned.
+// Test_GetAllTokenIDs tests retrieval of all token IDs and validates that the total supply
+// equals the number of tokens returned.
 func Test_GetAllTokenIDs(t *testing.T) {
-	backend, _, contractAddr, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddr, privKey, err := testingtools.SetupBlockchain(t,
 		ERC721Complete.ERC721CompleteABI,
 		ERC721Complete.ERC721CompleteBin,
 		"MyNFT",
@@ -53,7 +59,11 @@ func Test_GetAllTokenIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	baseinteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nftA, err := nft.NewERC721Interactions(baseinteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})

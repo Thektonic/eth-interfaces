@@ -5,15 +5,15 @@ package erc20_test
 import (
 	"context"
 	"crypto/ecdsa"
-	"log"
 	"math/big"
 	"testing"
 
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/erc20"
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC20Burnable"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
-	"github.com/Thektonic/eth-interfaces/utils"
+	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
@@ -21,17 +21,21 @@ import (
 
 // Test_DeploySuccessfully tests if the blockchain setup and contract deployment succeed without errors.
 func Test_DeploySuccessfully(t *testing.T) {
-	backend, _, _, _, err := utils.SetupBlockchain(t,
+	backend, _, _, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
+	_ = privKey
 	assert.Nil(t, err, "failed to create interactions interface, error: %w", err)
-	backend.Close()
+	if err := backend.Close(); err != nil {
+		t.Logf("failed to close backend: %v", err)
+	}
 }
 
-// Test_Instantiation verifies that the NFT interactions interface is correctly instantiated using various contracts, including a valid NFT contract, an empty contract, and an ERC20 contract.
+// Test_Instantiation verifies that the ERC20 interactions interface is correctly instantiated
+// using various contracts, including a valid ERC20 contract, an empty contract, and an NFT contract.
 func Test_Instantiation(t *testing.T) {
-	backend, auth, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
@@ -39,14 +43,18 @@ func Test_Instantiation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
-	emptyContract, err := utils.DeployEmptyContract(auth, backend)
+	emptyContract, err := testingtools.DeployEmptyContract(auth, backend)
 	if err != nil {
-		log.Fatalf("failed to deploy empty contract: %s", err)
+		t.Fatalf("failed to deploy empty contract: %s", err)
 	}
 
-	erc721CompleteContract, tx, _, err := utils.DeployContract(
+	erc721CompleteContract, tx, _, err := hex.DeployContract(
 		auth,
 		backend.Client(),
 		ERC721Complete.ERC721CompleteABI,
@@ -115,16 +123,25 @@ func Test_Instantiation(t *testing.T) {
 	}
 }
 
-// Test_Name verifies that the NFT contract correctly returns its name.
-func Test_Name(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+// testERC20StringMethod is a helper function to test ERC20 string methods (Name, Symbol) to avoid code duplication
+func testERC20StringMethod(
+	t *testing.T,
+	signature erc20.BaseERC20Signature,
+	expectedResult string,
+	methodCall func(*erc20.Interactions) (string, error),
+) {
+	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	testCases := []struct {
 		Name           string
@@ -134,8 +151,8 @@ func Test_Name(t *testing.T) {
 		ExpectedError  string
 	}{
 		{
-			Name:           "OK - Successfully get NFT name",
-			ExpectedResult: "TESTToken",
+			Name:           "OK - Successfully get token metadata",
+			ExpectedResult: expectedResult,
 			ContractAddr:   *contractAddress,
 		},
 	}
@@ -143,7 +160,7 @@ func Test_Name(t *testing.T) {
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Name})
+			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{signature})
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")
@@ -152,69 +169,42 @@ func Test_Name(t *testing.T) {
 				assert.Equal(t, tt.ExpectedError, err.Error())
 			} else {
 				assert.Nil(t, err, "failed to create interactions interface, error: %w", err)
-				name, err := session.Name()
+				result, err := methodCall(session)
 				assert.Nil(t, err)
-				assert.Equal(t, tt.ExpectedResult, name)
+				assert.Equal(t, tt.ExpectedResult, result)
 			}
 		})
 	}
 }
 
-// Test_Symbol verifies that the NFT contract correctly returns its symbol.
+// Test_Name verifies that the ERC20 contract correctly returns its name.
+func Test_Name(t *testing.T) {
+	testERC20StringMethod(t, erc20.Name, "TESTToken", func(session *erc20.Interactions) (string, error) {
+		return session.Name()
+	})
+}
+
+// Test_Symbol verifies that the ERC20 contract correctly returns its symbol.
 func Test_Symbol(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer backend.Close()
-
-	testCases := []struct {
-		Name           string
-		ContractAddr   common.Address
-		ExpectedResult string
-		ExpectError    bool
-		ExpectedError  string
-	}{
-		{
-			Name:           "OK - Successfully get NFT symbol",
-			ExpectedResult: "TT",
-			ContractAddr:   *contractAddress,
-		},
-	}
-
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
-	for _, tt := range testCases {
-		t.Run(tt.Name, func(t *testing.T) {
-			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Symbol})
-			if tt.ExpectError {
-				if err == nil {
-					t.Error("expected error but there's none")
-					return
-				}
-				assert.Equal(t, tt.ExpectedError, err.Error())
-			} else {
-				assert.Nil(t, err, "failed to create interactions interface, error: %w", err)
-				symbol, err := session.Symbol()
-				assert.Nil(t, err)
-				assert.Equal(t, tt.ExpectedResult, symbol)
-			}
-		})
-	}
+	testERC20StringMethod(t, erc20.Symbol, "TT", func(session *erc20.Interactions) (string, error) {
+		return session.Symbol()
+	})
 }
 
 // Test_TotalSupply verifies that the total supply of NFTs is correctly reported by the contract.
 func Test_TotalSupply(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	testCases := []struct {
 		Name           string
@@ -252,7 +242,7 @@ func Test_TotalSupply(t *testing.T) {
 
 // Test_Transfer tests the transfer functionality and ensures that the token transfer behaves as expected.
 func Test_Transfer(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
@@ -320,7 +310,9 @@ func Test_Transfer(t *testing.T) {
 				backend.Commit()
 				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
 			}
-			session, err := erc20.NewIERC20Interactions(baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TransferFrom})
+			session, err := erc20.NewIERC20Interactions(
+				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TransferFrom},
+			)
 			if err != nil {
 				t.Fatal("setting up should not fail")
 			}
@@ -346,14 +338,18 @@ func Test_Transfer(t *testing.T) {
 
 // Test_GetBalance verifies that the NFT balance is correctly returned for an address.
 func Test_GetBalance(t *testing.T) {
-	backend, auth, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf}, auth)
@@ -366,14 +362,18 @@ func Test_GetBalance(t *testing.T) {
 
 // Test_BalanceOf verifies the BalanceOf function for different addresses.
 func Test_BalanceOf(t *testing.T) {
-	backend, auth, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf})
@@ -417,14 +417,18 @@ func Test_BalanceOf(t *testing.T) {
 
 // Test_Approve tests the approval functionality for token transfers.
 func Test_Approve(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	type approveArgs struct {
 		To  common.Address
@@ -459,7 +463,9 @@ func Test_Approve(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 
-			token, err := erc20.NewIERC20Interactions(baseInteractions, *contractAddress, []erc20.BaseERC20Signature{erc20.Approve})
+			token, err := erc20.NewIERC20Interactions(
+				baseInteractions, *contractAddress, []erc20.BaseERC20Signature{erc20.Approve},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -482,14 +488,18 @@ func Test_Approve(t *testing.T) {
 
 // Test_TokenMetaInfos verifies that the metadata (name, symbol, and URI) for a token is correctly retrieved.
 func Test_TokenMetaInfos(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol})

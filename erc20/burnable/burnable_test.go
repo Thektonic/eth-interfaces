@@ -11,22 +11,27 @@ import (
 	"github.com/Thektonic/eth-interfaces/erc20"
 	"github.com/Thektonic/eth-interfaces/erc20/burnable"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC20Burnable"
-	"github.com/Thektonic/eth-interfaces/utils"
+	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 )
 
-// Test_Instantiation verifies that the NFT interactions interface is correctly instantiated using various contracts, including a valid NFT contract, an empty contract, and an ERC20 contract.
+// Test_Instantiation verifies that the ERC20 burnable interactions interface is correctly instantiated
+// using various contracts, including a valid ERC20 contract, an empty contract, and an NFT contract.
 func Test_Instantiation(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	testCases := []struct {
 		Name           string
@@ -45,7 +50,9 @@ func Test_Instantiation(t *testing.T) {
 	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			erc20Interactions, err := erc20.NewIERC20Interactions(baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals})
+			erc20Interactions, err := erc20.NewIERC20Interactions(
+				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals},
+			)
 			if err != nil {
 				t.Fatalf("failed to create interactions interface, error: %s", err.Error())
 			}
@@ -71,7 +78,7 @@ func Test_Instantiation(t *testing.T) {
 
 // Test_Burn tests the burn functionality and ensures that the token burn behaves as expected.
 func Test_Burn(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)
@@ -126,7 +133,9 @@ func Test_Burn(t *testing.T) {
 				backend.Commit()
 				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
 			}
-			session, err := erc20.NewIERC20Interactions(baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Name, erc20.BalanceOf})
+			session, err := erc20.NewIERC20Interactions(
+				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Name, erc20.BalanceOf},
+			)
 			if err != nil {
 				t.Fatal("setting up should not fail")
 			}

@@ -1,3 +1,4 @@
+
 name: Lint
 
 on:
@@ -10,7 +11,7 @@ on:
 permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
-  # pull-requests: read
+  pull-requests: read
 
 jobs:
   golangci:
@@ -21,13 +22,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
+          cache: false # Let golangci-lint handle caching
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.60
-          args: --timeout=5m
-
-      - uses: dominikh/staticcheck-action@v1.3.1
-        with:
-          version: "latest"
-          install-go: false
+          version: v2.3.1
+          args: --timeout=5m --verbose
+          only-new-issues: true

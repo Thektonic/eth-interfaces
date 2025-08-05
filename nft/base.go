@@ -1,6 +1,5 @@
-package nft
-
 // Package nft provides base functionality for interacting with NFTs using the IERC721 standard.
+package nft
 
 import (
 	"errors"
@@ -11,9 +10,9 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/contractextension"
 	"github.com/Thektonic/eth-interfaces/customerrors"
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/models"
-	"github.com/Thektonic/eth-interfaces/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -21,22 +20,23 @@ import (
 
 // ERC721Interactions wraps NFT interactions using an underlying base interaction and an ERC721A session.
 
+// ERC721Interactions provides methods for interacting with ERC721 NFT contracts
 type ERC721Interactions struct {
-	*base.BaseInteractions
+	*base.Interactions
 	erc721Session *ERC721Complete.ERC721CompleteSession
 	nftAddress    common.Address
 	callError     func(string, error) *base.CallError
 }
 
-// NewERC721Interactions creates a new instance of ERC721Interactions from a base interaction interface and an NFT contract address.
+// NewERC721Interactions creates a new instance of ERC721Interactions from a base interaction
+// interface and an NFT contract address.
 func NewERC721Interactions(
-	baseInteractions *base.BaseInteractions,
+	baseInteractions *base.Interactions,
 	address common.Address,
 	signatures []BaseNFTSignature,
 	transactOps ...*bind.TransactOpts,
 ) (*ERC721Interactions, error) {
-
-	var converted []utils.Signature
+	var converted []hex.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
 	}
@@ -76,14 +76,16 @@ func NewERC721Interactions(
 		callError,
 	}
 
-	if err := contractextension.SimulateCall(baseInteractions.Ctx, ERC721Complete.ERC721CompleteABI, "name", erc721Interactions); err != nil {
+	if err := contractextension.SimulateCall(
+		baseInteractions.Ctx, ERC721Complete.ERC721CompleteABI, "name", erc721Interactions,
+	); err != nil {
 		return nil, err
 	}
 
 	return erc721Interactions, nil
 }
 
-// GetNFTAddress returns the NFT contract address.
+// GetAddress returns the NFT contract address.
 func (d *ERC721Interactions) GetAddress() common.Address {
 	return d.nftAddress
 }
@@ -122,7 +124,7 @@ func (d *ERC721Interactions) TransferFirstOwnedTo(to common.Address) (*types.Tra
 		tokenID := big.NewInt(idx)
 		tx, err := d.TransferTo(to, tokenID)
 		if err != nil {
-			if strings.Contains(err.Error(), utils.ErrZeroAddress.Error()) {
+			if strings.Contains(err.Error(), hex.ErrZeroAddress.Error()) {
 				return nil, err
 			}
 			continue

@@ -1,15 +1,14 @@
-package enumerable
-
 // Package enumerable provides functions to interact with ERC721 enumerable properties.
+package enumerable
 
 import (
 	"math/big"
 
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/customerrors"
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/nft"
-	"github.com/Thektonic/eth-interfaces/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -20,8 +19,12 @@ type ERC721EnumerableInteractions struct {
 	callError         func(string, error) *base.CallError
 }
 
-// NewERC721EnumerableInteractions creates a new enumerable interaction instance using the provided base NFT interactions.
-func NewERC721EnumerableInteractions(baseIERC721 *nft.ERC721Interactions, signatures []IERC721EnumerableSignature) (*ERC721EnumerableInteractions, error) {
+// NewERC721EnumerableInteractions creates a new enumerable interaction instance
+// using the provided base NFT interactions.
+func NewERC721EnumerableInteractions(
+	baseIERC721 *nft.ERC721Interactions,
+	signatures []IERC721EnumerableSignature,
+) (*ERC721EnumerableInteractions, error) {
 	ierc721Enumerable, err := ERC721Complete.NewERC721Complete(baseIERC721.GetAddress(), baseIERC721.Client)
 	if err != nil {
 		return nil, customerrors.WrapinterfacingError("erc721Enumerable", err)
@@ -32,7 +35,7 @@ func NewERC721EnumerableInteractions(baseIERC721 *nft.ERC721Interactions, signat
 		TransactOpts: baseIERC721.GetSession().TransactOpts,
 	}
 
-	var converted []utils.Signature
+	var converted []hex.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
 	}

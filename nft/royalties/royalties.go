@@ -1,15 +1,14 @@
+// Package royalties provides functions to interact with ERC721 royalty properties.
 package royalties
-
-// Package royalties provides functions to interact with ERC721 royalties.
 
 import (
 	"math/big"
 
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/customerrors"
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/nft"
-	"github.com/Thektonic/eth-interfaces/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -26,8 +25,11 @@ type RoyaltyInfos struct {
 	RoyaltyAmount *big.Int
 }
 
-// NewIERC721RoyaltiesInteractions creates a new instance of IERC721RoyaltiesInteractions.
-func NewERC721RoyaltiesInteractions(baseIERC721 *nft.ERC721Interactions, signatures []IERC721RoyaltiesSignature) (*IERC721RoyaltiesInteractions, error) {
+// NewERC721RoyaltiesInteractions creates a new instance of IERC721RoyaltiesInteractions.
+func NewERC721RoyaltiesInteractions(
+	baseIERC721 *nft.ERC721Interactions,
+	signatures []IERC721RoyaltiesSignature,
+) (*IERC721RoyaltiesInteractions, error) {
 	ierc721Royalties, err := ERC721Complete.NewERC721Complete(baseIERC721.GetAddress(), baseIERC721.Client)
 	session := ERC721Complete.ERC721CompleteSession{
 		Contract:     ierc721Royalties,
@@ -38,7 +40,7 @@ func NewERC721RoyaltiesInteractions(baseIERC721 *nft.ERC721Interactions, signatu
 		return nil, customerrors.WrapinterfacingError("ierc721Royalties", err)
 	}
 
-	var converted []utils.Signature
+	var converted []hex.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
 	}
@@ -48,7 +50,7 @@ func NewERC721RoyaltiesInteractions(baseIERC721 *nft.ERC721Interactions, signatu
 		return nil, customerrors.WrapinterfacingError("ierc721Royalties", err)
 	}
 
-	callError := func(field string, err error) *base.CallError {
+	callError := func(_ string, err error) *base.CallError {
 		return baseIERC721.WrapCallError(ERC721Complete.ERC721CompleteABI, "nft.RoyaltyInfo()", err)
 	}
 
