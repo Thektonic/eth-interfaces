@@ -22,10 +22,14 @@ import (
 // ERC721Interactions wraps NFT interactions using an underlying base interaction and an ERC721A session.
 
 type ERC721Interactions struct {
-	*base.BaseInteractions
-	erc721Session *ERC721Complete.ERC721CompleteSession
-	nftAddress    common.Address
-	callError     func(string, error) *base.CallError
+	*base.Interactions[*ERC721Complete.ERC721CompleteSession]
+}
+
+type INFT interface {
+	GetAddress() common.Address
+	CheckSignatures(address common.Address, signatures []utils.Signature) error
+	GetSession() ERC721Complete.ERC721CompleteSession
+	GetBaseInteractions() *base.BaseInteractions
 }
 
 // NewERC721Interactions creates a new instance of ERC721Interactions from a base interaction interface and an NFT contract address.
@@ -70,43 +74,42 @@ func NewERC721Interactions(
 		return baseInteractions.WrapCallError(ERC721Complete.ERC721CompleteABI, field, err)
 	}
 
-	erc721Interactions := &ERC721Interactions{baseInteractions,
-		&erc721ASession,
-		address,
-		callError,
+	erc721Interactions := &ERC721Interactions{
+		&base.Interactions[*ERC721Complete.ERC721CompleteSession]{
+			BaseInteractions: baseInteractions,
+			Session:          &erc721ASession,
+			Address:          address,
+			CallError:        callError,
+		},
 	}
-
-	if err := contractextension.SimulateCall(baseInteractions.Ctx, ERC721Complete.ERC721CompleteABI, "name", erc721Interactions); err != nil {
-		return nil, err
+	if len(signatures) > 0 {
+		if err := contractextension.SimulateCall(baseInteractions.Ctx, ERC721Complete.ERC721CompleteABI, string(signatures[0]), erc721Interactions); err != nil {
+			return nil, err
+		}
 	}
 
 	return erc721Interactions, nil
 }
 
-// GetNFTAddress returns the NFT contract address.
-func (d *ERC721Interactions) GetAddress() common.Address {
-	return d.nftAddress
-}
-
 // GetSession returns the current session used for NFT interactions.
 func (d *ERC721Interactions) GetSession() ERC721Complete.ERC721CompleteSession {
-	return *d.erc721Session
+	return *d.Session
 }
 
 // GetBalance retrieves the balance of NFTs for the associated address.
 func (d *ERC721Interactions) GetBalance() (*big.Int, error) {
-	balance, err := d.erc721Session.BalanceOf(d.Address)
+	balance, err := d.Session.BalanceOf(d.Address)
 	if err != nil {
-		return nil, d.callError("nft.BalanceOf()", err)
+		return nil, d.CallError("nft.BalanceOf()", err)
 	}
 	return balance, nil
 }
 
 // TransferTo transfers a specific token to another address after verifying ownership.
 func (d *ERC721Interactions) TransferTo(to common.Address, tokenID *big.Int) (*types.Transaction, error) {
-	tx, err := d.erc721Session.TransferFrom(d.Address, to, tokenID)
+	tx, err := d.Session.TransferFrom(d.Address, to, tokenID)
 	if err != nil {
-		return nil, d.callError("nft.TransferFrom()", err)
+		return nil, d.CallError("nft.TransferFrom()", err)
 	}
 	return tx, nil
 }
@@ -135,36 +138,36 @@ func (d *ERC721Interactions) TransferFirstOwnedTo(to common.Address) (*types.Tra
 
 // TotalSupply returns the total number of NFTs minted.
 func (d *ERC721Interactions) TotalSupply() (*big.Int, error) {
-	supply, err := d.erc721Session.TotalSupply()
+	supply, err := d.Session.TotalSupply()
 	if err != nil {
-		return nil, d.callError("nft.TotalSupply()", err)
+		return nil, d.CallError("nft.TotalSupply()", err)
 	}
 	return supply, nil
 }
 
 // BalanceOf retrieves the NFT balance for a given owner.
 func (d *ERC721Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
-	balance, err := d.erc721Session.BalanceOf(owner)
+	balance, err := d.Session.BalanceOf(owner)
 	if err != nil {
-		return nil, d.callError("nft.BalanceOf()", err)
+		return nil, d.CallError("nft.BalanceOf()", err)
 	}
 	return balance, nil
 }
 
 // OwnerOf retrieves the owner of a specific token.
 func (d *ERC721Interactions) OwnerOf(tokenID *big.Int) (common.Address, error) {
-	owner, err := d.erc721Session.OwnerOf(tokenID)
+	owner, err := d.Session.OwnerOf(tokenID)
 	if err != nil {
-		return common.Address{}, d.callError("nft.OwnerOf()", err)
+		return common.Address{}, d.CallError("nft.OwnerOf()", err)
 	}
 	return owner, nil
 }
 
 // Approve approves an address to transfer a specific token.
 func (d *ERC721Interactions) Approve(to common.Address, tokenID *big.Int) (*types.Transaction, error) {
-	tx, err := d.erc721Session.Approve(to, tokenID)
+	tx, err := d.Session.Approve(to, tokenID)
 	if err != nil {
-		return nil, d.callError("nft.Approve()", err)
+		return nil, d.CallError("nft.Approve()", err)
 	}
 	return tx, nil
 }
@@ -190,36 +193,36 @@ func (d *ERC721Interactions) TokenMetaInfos(tokenID *big.Int) (*models.TokenMeta
 
 // Name returns the name of the NFT.
 func (d *ERC721Interactions) Name() (string, error) {
-	name, err := d.erc721Session.Name()
+	name, err := d.Session.Name()
 	if err != nil {
-		return "", d.callError("nft.Name()", err)
+		return "", d.CallError("nft.Name()", err)
 	}
 	return name, nil
 }
 
 // Symbol returns the symbol of the NFT.
 func (d *ERC721Interactions) Symbol() (string, error) {
-	symbol, err := d.erc721Session.Symbol()
+	symbol, err := d.Session.Symbol()
 	if err != nil {
-		return "", d.callError("nft.Symbol()", err)
+		return "", d.CallError("nft.Symbol()", err)
 	}
 	return symbol, nil
 }
 
 // TokenURI returns the URI of the NFT.
 func (d *ERC721Interactions) TokenURI(tokenID *big.Int) (string, error) {
-	uri, err := d.erc721Session.TokenURI(tokenID)
+	uri, err := d.Session.TokenURI(tokenID)
 	if err != nil {
-		return "", d.callError("nft.TokenURI()", err)
+		return "", d.CallError("nft.TokenURI()", err)
 	}
 	return uri, nil
 }
 
 // GetApproved returns the approved address for a specific token.
 func (d *ERC721Interactions) GetApproved(tokenID *big.Int) (common.Address, error) {
-	approved, err := d.erc721Session.GetApproved(tokenID)
+	approved, err := d.Session.GetApproved(tokenID)
 	if err != nil {
-		return common.Address{}, d.callError("nft.GetApproved()", err)
+		return common.Address{}, d.CallError("nft.GetApproved()", err)
 	}
 	return approved, nil
 }
