@@ -25,14 +25,15 @@ func Example1() {
 	if err != nil {
 		log.Fatal("Error getting the client: ", err)
 	}
-	defer client.Close()
 
 	// Get the private key from the .env file and convert it to an ECDSA key
 	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
 	if err != nil {
-		client.Close()
 		log.Fatal("error reading the PRIVATE_KEY env var: ", err)
 	}
+
+	// Defer client close after all potential fatal errors
+	defer client.Close()
 
 	// Create a new base interaction object
 	baseInteractions := base.NewBaseInteractions(client, privateKey, nil)
@@ -44,12 +45,14 @@ func Example1() {
 		[]nft.BaseNFTSignature{nft.Name, nft.Symbol, nft.TokenURI, nft.TransferFrom},
 	)
 	if err != nil {
-		log.Fatal("error creating the NFT interactions: ", err)
+		log.Printf("error creating the NFT interactions: %v", err)
+		return
 	}
 
 	// Transfer NFT to another address
 	_, err = nftInteractions.TransferTo(common.HexToAddress("0"), big.NewInt(0))
 	if err != nil {
-		log.Fatal("error transferring the NFT: ", err)
+		log.Printf("error transferring the NFT: %v", err)
+		return
 	}
 }

@@ -92,7 +92,7 @@ func (d *ERC20Interactions) GetSession() ERC20Burnable.ERC20BurnableSession {
 
 // GetBalance retrieves the balance of NFTs for the associated address.
 func (d *ERC20Interactions) GetBalance() (*big.Int, error) {
-	balance, err := d.ierc20Session.BalanceOf(d.BaseInteractions.Address)
+	balance, err := d.ierc20Session.BalanceOf(d.Address)
 	if err != nil {
 		return nil, d.callError("erc20.BalanceOf()", err)
 	}

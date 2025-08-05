@@ -24,8 +24,8 @@ linters-settings:
     rules:
       main:
         deny:
-          - pkg: "github.com/Thektonic/eth-interfaces/*"
-            desc: "Use relative imports within the same module"
+          - pkg: "github.com/sirupsen/logrus"
+            desc: "Use standard log or slog instead"
   misspell:
     locale: US
   lll:
@@ -51,7 +51,6 @@ linters:
   enable:
     - bodyclose
     - copyloopvar
-    - depguard
     - dogsled
     - dupl
     - errcheck

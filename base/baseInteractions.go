@@ -310,10 +310,10 @@ func (b *BaseInteractions) MatchErrors(abiString string, errBytes []byte) (strin
 	if err != nil {
 		return "", err
 	}
-	if len(errBytes) < 4 {
+	if len(errBytes) < utils.ErrorMethodIDLength {
 		panic("invalid error data")
 	}
-	methodID := errBytes[:4]
+	methodID := errBytes[:utils.ErrorMethodIDLength]
 
 	// Find matching custom error
 	var errorName string

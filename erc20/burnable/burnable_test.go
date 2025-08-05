@@ -27,7 +27,11 @@ func Test_Instantiation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	testCases := []struct {
 		Name           string

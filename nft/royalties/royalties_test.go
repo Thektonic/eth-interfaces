@@ -24,7 +24,11 @@ func Test_RoyaltiesInfos(t *testing.T) {
 		"MNFT",
 	)
 	assert.Nil(t, err)
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nftA, err := nft.NewERC721Interactions(baseInteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})

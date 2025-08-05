@@ -17,7 +17,7 @@ func FloatTo18z(amount float64) *big.Int {
 			a[0] += "0"
 		}
 	}
-	b, ok := new(big.Int).SetString(a[0], 10)
+	b, ok := new(big.Int).SetString(a[0], DecimalBase)
 	if !ok {
 		panic("Could not set big.Int string for value " + s)
 	}

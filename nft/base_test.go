@@ -5,7 +5,6 @@ package nft_test
 import (
 	"context"
 	"crypto/ecdsa"
-	"log"
 	"math/big"
 	"testing"
 
@@ -22,14 +21,17 @@ import (
 
 // Test_DeploySuccessfully tests if the blockchain setup and contract deployment succeed without errors.
 func Test_DeploySuccessfully(t *testing.T) {
-	backend, _, _, _, err := utils.SetupBlockchain(t,
+	backend, _, _, privKey, err := utils.SetupBlockchain(t,
 		ERC721Complete.ERC721CompleteABI,
 		ERC721Complete.ERC721CompleteBin,
 		"MyNFT", // Arg 1: name
 		"MNFT",  // Arg 2: symbol
 	)
+	_ = privKey
 	assert.Nil(t, err, "failed to create interactions interface, error: %w", err)
-	backend.Close()
+	if err := backend.Close(); err != nil {
+		t.Logf("failed to close backend: %v", err)
+	}
 }
 
 // Test_Instantiation verifies that the NFT interactions interface is correctly instantiated
@@ -44,11 +46,15 @@ func Test_Instantiation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	emptyContract, err := utils.DeployEmptyContract(auth, backend)
 	if err != nil {
-		log.Fatalf("failed to deploy empty contract: %s", err)
+		t.Fatalf("failed to deploy empty contract: %s", err)
 	}
 
 	erc20Contract, tx, _, err := utils.DeployContract(
@@ -113,8 +119,8 @@ func Test_Instantiation(t *testing.T) {
 	}
 }
 
-// Test_Name verifies that the NFT contract correctly returns its name.
-func Test_Name(t *testing.T) {
+// testNFTStringMethod is a helper function to test NFT string methods (Name, Symbol) to avoid code duplication
+func testNFTStringMethod(t *testing.T, signature nft.BaseNFTSignature, expectedResult string, methodCall func(*nft.ERC721Interactions) (string, error)) {
 	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
 		ERC721Complete.ERC721CompleteABI,
 		ERC721Complete.ERC721CompleteBin,
@@ -124,7 +130,11 @@ func Test_Name(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	testCases := []struct {
 		Name           string
@@ -134,8 +144,8 @@ func Test_Name(t *testing.T) {
 		ExpectedError  string
 	}{
 		{
-			Name:           "OK - Successfully get NFT name",
-			ExpectedResult: "MyNFT",
+			Name:           "OK - Successfully get NFT metadata",
+			ExpectedResult: expectedResult,
 			ContractAddr:   *contractAddress,
 		},
 	}
@@ -143,7 +153,7 @@ func Test_Name(t *testing.T) {
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			session, err := nft.NewERC721Interactions(base, tt.ContractAddr, []nft.BaseNFTSignature{nft.Name})
+			session, err := nft.NewERC721Interactions(base, tt.ContractAddr, []nft.BaseNFTSignature{signature})
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")
@@ -152,59 +162,26 @@ func Test_Name(t *testing.T) {
 				assert.Equal(t, tt.ExpectedError, err.Error())
 			} else {
 				assert.Nil(t, err, "failed to create interactions interface, error: %w", err)
-				name, err := session.Name()
+				result, err := methodCall(session)
 				assert.Nil(t, err)
-				assert.Equal(t, tt.ExpectedResult, name)
+				assert.Equal(t, tt.ExpectedResult, result)
 			}
 		})
 	}
 }
 
+// Test_Name verifies that the NFT contract correctly returns its name.
+func Test_Name(t *testing.T) {
+	testNFTStringMethod(t, nft.Name, "MyNFT", func(session *nft.ERC721Interactions) (string, error) {
+		return session.Name()
+	})
+}
+
 // Test_Symbol verifies that the NFT contract correctly returns its symbol.
 func Test_Symbol(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
-		"MyNFT", // Arg 1: name
-		"MNFT",  // Arg 2: symbol
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer backend.Close()
-
-	testCases := []struct {
-		Name           string
-		ContractAddr   common.Address
-		ExpectedResult string
-		ExpectError    bool
-		ExpectedError  string
-	}{
-		{
-			Name:           "OK - Successfully get NFT symbol",
-			ExpectedResult: "MNFT",
-			ContractAddr:   *contractAddress,
-		},
-	}
-
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
-	for _, tt := range testCases {
-		t.Run(tt.Name, func(t *testing.T) {
-			session, err := nft.NewERC721Interactions(base, tt.ContractAddr, []nft.BaseNFTSignature{nft.Symbol})
-			if tt.ExpectError {
-				if err == nil {
-					t.Error("expected error but there's none")
-					return
-				}
-				assert.Equal(t, tt.ExpectedError, err.Error())
-			} else {
-				assert.Nil(t, err, "failed to create interactions interface, error: %w", err)
-				symbol, err := session.Symbol()
-				assert.Nil(t, err)
-				assert.Equal(t, tt.ExpectedResult, symbol)
-			}
-		})
-	}
+	testNFTStringMethod(t, nft.Symbol, "MNFT", func(session *nft.ERC721Interactions) (string, error) {
+		return session.Symbol()
+	})
 }
 
 // Test_TotalSupply verifies that the total supply of NFTs is correctly reported by the contract.
@@ -218,7 +195,11 @@ func Test_TotalSupply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	testCases := []struct {
 		Name           string
@@ -265,7 +246,11 @@ func Test_OwnerOf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	testCases := []struct {
 		Name           string
@@ -417,7 +402,11 @@ func Test_GetBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nft, err := nft.NewERC721Interactions(base, *contractAddress, []nft.BaseNFTSignature{nft.BalanceOf}, auth)
@@ -439,7 +428,11 @@ func Test_TransferFirstOwnedTo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	type transferArgs struct {
 		pk *ecdsa.PrivateKey
@@ -528,7 +521,11 @@ func Test_BalanceOf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nft, err := nft.NewERC721Interactions(base, *contractAddress, []nft.BaseNFTSignature{nft.BalanceOf})
@@ -590,7 +587,11 @@ func Test_Approve(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	type approveArgs struct {
 		pk      *ecdsa.PrivateKey
@@ -672,7 +673,11 @@ func Test_TokenMetaInfos(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nft, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol, erc20.TokenURI})

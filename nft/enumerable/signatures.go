@@ -12,7 +12,7 @@ type IERC721EnumerableSignature nft.BaseNFTSignature
 
 const (
 	TokenOfOwnerByIndex IERC721EnumerableSignature = "tokenOfOwnerByIndex(address,uint256)"
-	TokenByIndex        IERC721EnumerableSignature = "tokenByIndex(uint256)"
+	TokenByIndex        IERC721EnumerableSignature = "tokenByIndex(uint256)" // #nosec G101
 )
 
 func (s IERC721EnumerableSignature) GetHex() string {

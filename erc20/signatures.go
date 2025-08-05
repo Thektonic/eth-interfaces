@@ -15,7 +15,7 @@ const (
 	Decimals         BaseERC20Signature = "decimals()"
 	BalanceOf        BaseERC20Signature = "balanceOf(address)"
 	TotalSupply      BaseERC20Signature = "totalSupply()"
-	TokenURI         BaseERC20Signature = "tokenURI(uint256)"
+	TokenURI         BaseERC20Signature = "tokenURI(uint256)" // #nosec G101
 	Approve          BaseERC20Signature = "approve(address,uint256)"
 	TransferFrom     BaseERC20Signature = "transferFrom(address,address,uint256)"
 	SafeTransferFrom BaseERC20Signature = "safeTransferFrom(address,address,uint256)"

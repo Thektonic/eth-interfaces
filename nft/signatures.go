@@ -15,7 +15,7 @@ const (
 	BalanceOf        BaseNFTSignature = "balanceOf(address)"
 	TotalSupply      BaseNFTSignature = "totalSupply()"
 	OwnerOf          BaseNFTSignature = "ownerOf(uint256)"
-	TokenURI         BaseNFTSignature = "tokenURI(uint256)"
+	TokenURI         BaseNFTSignature = "tokenURI(uint256)" // #nosec G101
 	Approve          BaseNFTSignature = "approve(address,uint256)"
 	GetApproved      BaseNFTSignature = "getApproved(uint256)"
 	TransferFrom     BaseNFTSignature = "transferFrom(address,address,uint256)"

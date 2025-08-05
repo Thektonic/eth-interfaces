@@ -22,7 +22,11 @@ func Test_GetAddressOwnedTokens(t *testing.T) {
 		"MNFT",
 	)
 	assert.Nil(t, err)
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	baseinteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nftA, err := nft.NewERC721Interactions(baseinteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})
@@ -53,7 +57,11 @@ func Test_GetAllTokenIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	defer backend.Close()
+	defer func() {
+		if err := backend.Close(); err != nil {
+			t.Logf("failed to close backend: %v", err)
+		}
+	}()
 
 	baseinteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nftA, err := nft.NewERC721Interactions(baseinteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})

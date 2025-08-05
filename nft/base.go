@@ -93,7 +93,7 @@ func (d *ERC721Interactions) GetSession() ERC721Complete.ERC721CompleteSession {
 
 // GetBalance retrieves the balance of NFTs for the associated address.
 func (d *ERC721Interactions) GetBalance() (*big.Int, error) {
-	balance, err := d.erc721Session.BalanceOf(d.BaseInteractions.Address)
+	balance, err := d.erc721Session.BalanceOf(d.Address)
 	if err != nil {
 		return nil, d.callError("nft.BalanceOf()", err)
 	}
@@ -102,7 +102,7 @@ func (d *ERC721Interactions) GetBalance() (*big.Int, error) {
 
 // TransferTo transfers a specific token to another address after verifying ownership.
 func (d *ERC721Interactions) TransferTo(to common.Address, tokenID *big.Int) (*types.Transaction, error) {
-	tx, err := d.erc721Session.TransferFrom(d.BaseInteractions.Address, to, tokenID)
+	tx, err := d.erc721Session.TransferFrom(d.Address, to, tokenID)
 	if err != nil {
 		return nil, d.callError("nft.TransferFrom()", err)
 	}

@@ -28,7 +28,7 @@ func SetupBlockchain(
 	error,
 ) {
 	privKey, _ := crypto.GenerateKey()
-	auth, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(1337))
+	auth, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(TestChainID))
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -37,7 +37,7 @@ func SetupBlockchain(
 	alloc := types.GenesisAlloc{
 		testUserAddress: types.Account{Balance: MaxUint256},
 	}
-	backend := simulated.NewBackend(alloc, simulated.WithBlockGasLimit(9_000_000))
+	backend := simulated.NewBackend(alloc, simulated.WithBlockGasLimit(TestGasLimit))
 
 	contractAddr, tx, _, err := DeployContract(
 		auth,

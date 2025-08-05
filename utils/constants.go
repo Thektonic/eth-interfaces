@@ -12,6 +12,17 @@ var (
 	IERC1155InterfaceID = [4]byte{0xd9, 0xb6, 0x7a, 0x26}
 )
 
+const (
+	// ErrorMethodIDLength is the length of Ethereum error method ID in bytes
+	ErrorMethodIDLength = 4
+	// DecimalBase is the base for decimal number parsing
+	DecimalBase = 10
+	// TestChainID is the chain ID used for testing
+	TestChainID = 1337
+	// TestGasLimit is the gas limit used for testing
+	TestGasLimit = 9_000_000
+)
+
 var (
 	MaxUint256 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))
 )
