@@ -7,21 +7,24 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/customerrors"
 	"github.com/Thektonic/eth-interfaces/erc20"
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC20Burnable"
-	"github.com/Thektonic/eth-interfaces/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // IERC20BurnableInteractions wraps interactions with an IERC20Burnable contract, extending basic ERC20 interactions.
 type IERC20BurnableInteractions struct {
-	*erc20.ERC20Interactions
+	*erc20.Interactions
 	erc20Burnable *ERC20Burnable.ERC20BurnableSession
 	callError     func(string, error) *base.CallError
 }
 
 // NewIERC20Burnable creates a new enumerable interaction instance using the provided base NFT interactions.
-func NewIERC20Burnable(baseIERC20 *erc20.ERC20Interactions, signatures []ERC20BurnableSignatures) (*IERC20BurnableInteractions, error) {
+func NewIERC20Burnable(
+	baseIERC20 *erc20.Interactions,
+	signatures []ERC20BurnableSignatures,
+) (*IERC20BurnableInteractions, error) {
 	erc20Burnable, err := ERC20Burnable.NewERC20Burnable(baseIERC20.GetAddress(), baseIERC20.Client)
 	if err != nil {
 		return nil, customerrors.WrapinterfacingError("ierc20Burnable", err)
@@ -32,7 +35,7 @@ func NewIERC20Burnable(baseIERC20 *erc20.ERC20Interactions, signatures []ERC20Bu
 		TransactOpts: baseIERC20.GetSession().TransactOpts,
 	}
 
-	var converted []utils.Signature
+	var converted []hex.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// BaseToken defines the interface for basic token operations
 type BaseToken interface {
 	Name() (string, error)
 	Symbol() (string, error)

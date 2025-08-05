@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// CallError represents an error that occurred during a contract call
 type CallError struct {
 	Field string
 	Err   error
@@ -13,7 +14,8 @@ func (e *CallError) Error() string {
 	return fmt.Sprintf("call error on %s: %s", e.Field, e.Err.Error())
 }
 
-func (d *BaseInteractions) WrapCallError(abiString, field string, err error) *CallError {
+// WrapCallError wraps an error with contract call context information
+func (d *Interactions) WrapCallError(abiString, field string, err error) *CallError {
 	if err == nil {
 		return nil
 	}
@@ -29,4 +31,5 @@ func (d *BaseInteractions) WrapCallError(abiString, field string, err error) *Ca
 	}
 }
 
+// UnWrap returns the underlying error
 func (e *CallError) UnWrap() error { return e.Err }

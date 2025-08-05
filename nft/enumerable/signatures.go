@@ -8,13 +8,17 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// IERC721EnumerableSignature represents function signatures for ERC721 enumerable operations
 type IERC721EnumerableSignature nft.BaseNFTSignature
 
 const (
+	// TokenOfOwnerByIndex represents the tokenOfOwnerByIndex function signature
 	TokenOfOwnerByIndex IERC721EnumerableSignature = "tokenOfOwnerByIndex(address,uint256)"
-	TokenByIndex        IERC721EnumerableSignature = "tokenByIndex(uint256)" // #nosec G101
+	// TokenByIndex represents the tokenByIndex function signature
+	TokenByIndex IERC721EnumerableSignature = "tokenByIndex(uint256)" // #nosec G101
 )
 
+// GetHex returns the hex representation of the function signature
 func (s IERC721EnumerableSignature) GetHex() string {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error

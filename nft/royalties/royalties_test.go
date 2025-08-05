@@ -10,14 +10,14 @@ import (
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/nft/royalties"
-	"github.com/Thektonic/eth-interfaces/utils"
+	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
 // Test_RoyaltiesInfos verifies the RoyaltiesInfos method for valid and invalid token IDs using a table-driven approach.
 func Test_RoyaltiesInfos(t *testing.T) {
-	backend, _, contractAddr, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddr, privKey, err := testingtools.SetupBlockchain(t,
 		ERC721Complete.ERC721CompleteABI,
 		ERC721Complete.ERC721CompleteBin,
 		"MyNFT",
@@ -34,7 +34,9 @@ func Test_RoyaltiesInfos(t *testing.T) {
 	nftA, err := nft.NewERC721Interactions(baseInteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})
 	assert.Nil(t, err)
 
-	royInteractions, err := royalties.NewERC721RoyaltiesInteractions(nftA, []royalties.IERC721RoyaltiesSignature{royalties.RoyaltyInfo})
+	royInteractions, err := royalties.NewERC721RoyaltiesInteractions(
+		nftA, []royalties.IERC721RoyaltiesSignature{royalties.RoyaltyInfo},
+	)
 	if err != nil {
 		t.Skipf("Skipping royalties test as royalties interactions are not implemented: %v", err)
 	}

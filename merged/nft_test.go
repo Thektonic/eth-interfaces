@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/Thektonic/eth-interfaces/base"
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721A"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/merged"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/nft/enumerable"
 	"github.com/Thektonic/eth-interfaces/nft/royalties"
-	"github.com/Thektonic/eth-interfaces/utils"
+	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +21,7 @@ func Test_Instantiation(t *testing.T) {
 		abiString      string
 		byteCodeString string
 		extensions     []merged.ExtensionEnum
-		signatures     []utils.Signature
+		signatures     []hex.Signature
 	}
 
 	testCases := []struct {
@@ -35,7 +36,7 @@ func Test_Instantiation(t *testing.T) {
 				abiString:      ERC721A.ERC721AABI,
 				byteCodeString: ERC721A.ERC721ABin,
 				extensions:     []merged.ExtensionEnum{merged.Enumerable},
-				signatures: []utils.Signature{
+				signatures: []hex.Signature{
 					enumerable.TokenByIndex,
 					enumerable.TokenOfOwnerByIndex,
 				},
@@ -47,7 +48,7 @@ func Test_Instantiation(t *testing.T) {
 				abiString:      ERC721Complete.ERC721CompleteABI,
 				byteCodeString: ERC721Complete.ERC721CompleteBin,
 				extensions:     []merged.ExtensionEnum{merged.Royalties},
-				signatures:     []utils.Signature{royalties.RoyaltyInfo},
+				signatures:     []hex.Signature{royalties.RoyaltyInfo},
 			},
 		},
 		{
@@ -56,7 +57,7 @@ func Test_Instantiation(t *testing.T) {
 				abiString:      ERC721Complete.ERC721CompleteABI,
 				byteCodeString: ERC721Complete.ERC721CompleteBin,
 				extensions:     []merged.ExtensionEnum{merged.Royalties, merged.Enumerable},
-				signatures: []utils.Signature{
+				signatures: []hex.Signature{
 					royalties.RoyaltyInfo,
 					enumerable.TokenByIndex,
 					enumerable.TokenOfOwnerByIndex,
@@ -69,7 +70,7 @@ func Test_Instantiation(t *testing.T) {
 				abiString:      ERC721A.ERC721AABI,
 				byteCodeString: ERC721A.ERC721ABin,
 				extensions:     []merged.ExtensionEnum{merged.Enumerable, merged.Royalties},
-				signatures:     []utils.Signature{enumerable.TokenOfOwnerByIndex, royalties.RoyaltyInfo},
+				signatures:     []hex.Signature{enumerable.TokenOfOwnerByIndex, royalties.RoyaltyInfo},
 			},
 			ExpectError:   true,
 			ExpectedError: "not supported functions: royaltyInfo(uint256,uint256)",
@@ -78,7 +79,7 @@ func Test_Instantiation(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			backend, _, contractAddr, privKey, err := utils.SetupBlockchain(t,
+			backend, _, contractAddr, privKey, err := testingtools.SetupBlockchain(t,
 				tt.Args.abiString,
 				tt.Args.byteCodeString,
 				"MyNFT",

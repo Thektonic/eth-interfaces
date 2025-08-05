@@ -7,9 +7,9 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/contractextension"
 	"github.com/Thektonic/eth-interfaces/customerrors"
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC20Burnable"
 	"github.com/Thektonic/eth-interfaces/models"
-	"github.com/Thektonic/eth-interfaces/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,21 +19,23 @@ import (
 
 // IERC20AInteractions wraps NFT interactions using an underlying base interaction and an ERC20 session.
 
-type ERC20Interactions struct {
-	*base.BaseInteractions
+// Interactions provides methods for interacting with ERC20 token contracts
+type Interactions struct {
+	*base.Interactions
 	ierc20Session *ERC20Burnable.ERC20BurnableSession
 	erc20Address  common.Address
 	callError     func(string, error) *base.CallError
 }
 
-// NewIERC20Interactions creates a new instance of IERC20AInteractions from a base interaction interface and an NFT contract address.
+// NewIERC20Interactions creates a new instance of IERC20AInteractions from a base interaction
+// interface and an NFT contract address.
 func NewIERC20Interactions(
-	baseInteractions *base.BaseInteractions,
+	baseInteractions *base.Interactions,
 	address common.Address,
 	signatures []BaseERC20Signature,
 	transactOps ...*bind.TransactOpts,
-) (*ERC20Interactions, error) {
-	var converted []utils.Signature
+) (*Interactions, error) {
+	var converted []hex.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
 	}
@@ -67,13 +69,15 @@ func NewIERC20Interactions(
 		return (baseInteractions.WrapCallError(ERC20Burnable.ERC20BurnableABI, field, err))
 	}
 
-	ierc20Asession := &ERC20Interactions{baseInteractions,
+	ierc20Asession := &Interactions{baseInteractions,
 		&ierc20Session,
 		address,
 		callError,
 	}
 
-	if err := contractextension.SimulateCall(baseInteractions.Ctx, ERC20Burnable.ERC20BurnableABI, "name", ierc20Asession); err != nil {
+	if err := contractextension.SimulateCall(
+		baseInteractions.Ctx, ERC20Burnable.ERC20BurnableABI, "name", ierc20Asession,
+	); err != nil {
 		return nil, err
 	}
 
@@ -81,17 +85,17 @@ func NewIERC20Interactions(
 }
 
 // GetAddress returns the ERC20 contract address.
-func (d *ERC20Interactions) GetAddress() common.Address {
+func (d *Interactions) GetAddress() common.Address {
 	return d.erc20Address
 }
 
 // GetSession returns the current session used for NFT interactions.
-func (d *ERC20Interactions) GetSession() ERC20Burnable.ERC20BurnableSession {
+func (d *Interactions) GetSession() ERC20Burnable.ERC20BurnableSession {
 	return *d.ierc20Session
 }
 
 // GetBalance retrieves the balance of NFTs for the associated address.
-func (d *ERC20Interactions) GetBalance() (*big.Int, error) {
+func (d *Interactions) GetBalance() (*big.Int, error) {
 	balance, err := d.ierc20Session.BalanceOf(d.Address)
 	if err != nil {
 		return nil, d.callError("erc20.BalanceOf()", err)
@@ -100,7 +104,7 @@ func (d *ERC20Interactions) GetBalance() (*big.Int, error) {
 }
 
 // TransferTo transfers a specific token to another address after verifying ownership.
-func (d *ERC20Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Transaction, error) {
+func (d *Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Transaction, error) {
 	tx, err := d.ierc20Session.Transfer(to, amount)
 	if err != nil {
 		return nil, d.callError("erc20.Transfer()", err)
@@ -109,7 +113,7 @@ func (d *ERC20Interactions) TransferTo(to common.Address, amount *big.Int) (*typ
 }
 
 // TotalSupply returns the total number of NFTs minted.
-func (d *ERC20Interactions) TotalSupply() (*big.Int, error) {
+func (d *Interactions) TotalSupply() (*big.Int, error) {
 	supply, err := d.ierc20Session.TotalSupply()
 	if err != nil {
 		return nil, d.callError("erc20.TotalSupply()", err)
@@ -118,7 +122,7 @@ func (d *ERC20Interactions) TotalSupply() (*big.Int, error) {
 }
 
 // BalanceOf retrieves the NFT balance for a given owner.
-func (d *ERC20Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
+func (d *Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
 	balance, err := d.ierc20Session.BalanceOf(owner)
 	if err != nil {
 		return nil, d.callError("erc20.BalanceOf()", err)
@@ -127,7 +131,7 @@ func (d *ERC20Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
 }
 
 // Approve approves an address to transfer a specific token.
-func (d *ERC20Interactions) Approve(to common.Address, tokenID *big.Int) (*types.Transaction, error) {
+func (d *Interactions) Approve(to common.Address, tokenID *big.Int) (*types.Transaction, error) {
 	tx, err := d.ierc20Session.Approve(to, tokenID)
 	if err != nil {
 		return nil, d.callError("erc20.Approve()", err)
@@ -136,7 +140,7 @@ func (d *ERC20Interactions) Approve(to common.Address, tokenID *big.Int) (*types
 }
 
 // TokenMetaInfos retrieves metadata about the specified token such as name, symbol, and URI.
-func (d *ERC20Interactions) TokenMetaInfos() (*models.TokenMeta, error) {
+func (d *Interactions) TokenMetaInfos() (*models.TokenMeta, error) {
 	name, err := d.Name()
 	if err != nil {
 		return nil, err
@@ -149,7 +153,7 @@ func (d *ERC20Interactions) TokenMetaInfos() (*models.TokenMeta, error) {
 }
 
 // Name returns the name of the NFT.
-func (d *ERC20Interactions) Name() (string, error) {
+func (d *Interactions) Name() (string, error) {
 	name, err := d.ierc20Session.Name()
 	if err != nil {
 		return "", d.callError("erc20.Name()", err)
@@ -158,7 +162,7 @@ func (d *ERC20Interactions) Name() (string, error) {
 }
 
 // Symbol returns the symbol of the NFT.
-func (d *ERC20Interactions) Symbol() (string, error) {
+func (d *Interactions) Symbol() (string, error) {
 	symbol, err := d.ierc20Session.Symbol()
 	if err != nil {
 		return "", d.callError("erc20.Symbol()", err)
@@ -166,7 +170,8 @@ func (d *ERC20Interactions) Symbol() (string, error) {
 	return symbol, nil
 }
 
-func (d *ERC20Interactions) Allowance(owner, spender common.Address) (*big.Int, error) {
+// Allowance returns the amount of tokens that spender is allowed to spend on behalf of owner
+func (d *Interactions) Allowance(owner, spender common.Address) (*big.Int, error) {
 	allowance, err := d.ierc20Session.Allowance(owner, spender)
 	if err != nil {
 		return nil, d.callError("erc20.Allowance()", err)

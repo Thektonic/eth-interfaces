@@ -1,5 +1,5 @@
-// Package utils provides common utilities and constants for Ethereum contract interactions.
-package utils
+// Package testingtools provides common utilities and constants for Ethereum contract interactions.
+package testingtools
 
 import (
 	"context"
@@ -8,13 +8,15 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient/simulated"
 )
 
+// SetupBlockchain sets up a test blockchain environment with a deployed contract
 func SetupBlockchain(
 	t *testing.T,
 	contractABI string,
@@ -28,18 +30,18 @@ func SetupBlockchain(
 	error,
 ) {
 	privKey, _ := crypto.GenerateKey()
-	auth, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(TestChainID))
+	auth, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(hex.TestChainID))
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
 	testUserAddress := crypto.PubkeyToAddress(privKey.PublicKey)
-	alloc := types.GenesisAlloc{
-		testUserAddress: types.Account{Balance: MaxUint256},
+	alloc := ethTypes.GenesisAlloc{
+		testUserAddress: ethTypes.Account{Balance: hex.MaxUint256},
 	}
-	backend := simulated.NewBackend(alloc, simulated.WithBlockGasLimit(TestGasLimit))
+	backend := simulated.NewBackend(alloc, simulated.WithBlockGasLimit(hex.TestGasLimit))
 
-	contractAddr, tx, _, err := DeployContract(
+	contractAddr, tx, _, err := hex.DeployContract(
 		auth,
 		backend.Client(),
 		contractABI,
@@ -59,8 +61,9 @@ func SetupBlockchain(
 	return backend, auth, &contractAddr, privKey, nil
 }
 
+// DeployEmptyContract deploys an empty contract for testing purposes
 func DeployEmptyContract(auth *bind.TransactOpts, backend *simulated.Backend) (*common.Address, error) {
-	contractAddr, tx, _, err := DeployContract(
+	contractAddr, tx, _, err := hex.DeployContract(
 		auth,
 		backend.Client(),
 		"[]",

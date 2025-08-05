@@ -8,12 +8,15 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// IERC721RoyaltiesSignature represents function signatures for ERC721 royalties operations
 type IERC721RoyaltiesSignature nft.BaseNFTSignature
 
 const (
+	// RoyaltyInfo represents the royaltyInfo function signature
 	RoyaltyInfo IERC721RoyaltiesSignature = "royaltyInfo(uint256,uint256)"
 )
 
+// GetHex returns the hex representation of the function signature
 func (s IERC721RoyaltiesSignature) GetHex() string {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error

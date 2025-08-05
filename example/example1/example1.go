@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Example1 demonstrates basic NFT contract interactions including connection and transfer
 func Example1() {
 	err := godotenv.Load()
 	if err != nil {

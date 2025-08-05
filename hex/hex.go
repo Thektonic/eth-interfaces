@@ -1,5 +1,5 @@
-// Package utils provides common utilities and constants for Ethereum contract interactions.
-package utils
+// Package hex provides common utilities and constants for Ethereum contract interactions.
+package hex
 
 import (
 	"strings"
@@ -7,14 +7,16 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient/simulated"
 )
 
+// GetFunctionSelector returns the function selector for a given signature
 func GetFunctionSelector(signature Signature) string {
 	return signature.GetHex()
 }
 
+// GetEncodedFunction encodes a function call with the given parameters
 func GetEncodedFunction(abiString, signature string, params ...interface{}) ([]byte, error) {
 	contractABI, err := abi.JSON(strings.NewReader(abiString))
 	if err != nil {
@@ -23,12 +25,13 @@ func GetEncodedFunction(abiString, signature string, params ...interface{}) ([]b
 	return contractABI.Pack(signature, params...)
 }
 
+// DeployContract deploys a contract with the given parameters
 func DeployContract(auth *bind.TransactOpts,
 	client simulated.Client,
 	abiString string,
 	byteCodeString string,
 	params ...interface{},
-) (common.Address, *types.Transaction, *bind.BoundContract, error) {
+) (common.Address, *ethTypes.Transaction, *bind.BoundContract, error) {
 	contractABI, err := abi.JSON(strings.NewReader(abiString))
 	if err != nil {
 		return common.Address{}, nil, nil, err

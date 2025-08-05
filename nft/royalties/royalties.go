@@ -6,9 +6,9 @@ import (
 
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/customerrors"
+	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/nft"
-	"github.com/Thektonic/eth-interfaces/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -40,7 +40,7 @@ func NewERC721RoyaltiesInteractions(
 		return nil, customerrors.WrapinterfacingError("ierc721Royalties", err)
 	}
 
-	var converted []utils.Signature
+	var converted []hex.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
 	}
@@ -50,7 +50,7 @@ func NewERC721RoyaltiesInteractions(
 		return nil, customerrors.WrapinterfacingError("ierc721Royalties", err)
 	}
 
-	callError := func(field string, err error) *base.CallError {
+	callError := func(_ string, err error) *base.CallError {
 		return baseIERC721.WrapCallError(ERC721Complete.ERC721CompleteABI, "nft.RoyaltyInfo()", err)
 	}
 
