@@ -1,53 +1,11 @@
-version: 2
+version: "2"
 
 run:
   timeout: 5m
   tests: true
   modules-download-mode: readonly
 
-linters-settings:
-  govet:
-    enable:
-      - fieldalignment
-    disable:
-      - shadow
-  revive:
-    min-confidence: 0
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  depguard:
-    rules:
-      main:
-        deny:
-          - pkg: "github.com/sirupsen/logrus"
-            desc: "Use standard log or slog instead"
-  misspell:
-    locale: US
-  lll:
-    line-length: 140
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-
 linters:
-  # please, do not use `enable-all`: it's deprecated and will be removed soon.
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
-  disable-all: true
   enable:
     - bodyclose
     - copyloopvar
@@ -76,51 +34,5 @@ linters:
     - whitespace
 
 issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - mnd
-        - gocritic
-        - gosec
-        - dupl
-    
-    # https://github.com/go-critic/go-critic/issues/926
-    - linters:
-        - gocritic
-      text: "unnecessaryDefer:"
-
-  # Independently from option `exclude` we use default exclude patterns,
-  # it can be disabled by this option. To list all
-  # excluded by default patterns execute `golangci-lint run --help`.
-  # Default value for this option is true.
-  exclude-use-default: false
-
-  # The default value is false. If set to true exclude and exclude-rules
-  # regular expressions become case sensitive.
-  exclude-case-sensitive: false
-
-  # The list of ids of default excludes to include or disable. By default it's empty.
-  include:
-    - EXC0002 # disable excluding of issues about comments from golint
-
-  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
   max-issues-per-linter: 0
-
-  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
   max-same-issues: 0
-
-  # Show only new issues: if there are unstaged changes or untracked files,
-  # only those changes are analyzed, e.g. running golangci-lint with
-  # unstaged changes will show only those issues introduced in the unstaged changes.
-  # This option makes sense only for decentralized CI (GitHub Actions, etc).
-  new: false
-
-  # Show only new issues created after git revision `REV`
-  new-from-rev: ""
-
-  # Show only new issues created in git patch with set file path.
-  new-from-patch: ""
-
-  # Fix found issues (if it's supported by the linter)
-  fix: false
