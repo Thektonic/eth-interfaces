@@ -29,7 +29,8 @@ func Test_DeploySuccessfully(t *testing.T) {
 	backend.Close()
 }
 
-// Test_Instantiation verifies that the NFT interactions interface is correctly instantiated using various contracts, including a valid NFT contract, an empty contract, and an ERC20 contract.
+// Test_Instantiation verifies that the ERC20 interactions interface is correctly instantiated
+// using various contracts, including a valid ERC20 contract, an empty contract, and an NFT contract.
 func Test_Instantiation(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := utils.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,

@@ -1,3 +1,4 @@
+// Package basetokens provides common interfaces for token contract interactions.
 package basetokens
 
 import (

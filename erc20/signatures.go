@@ -1,3 +1,4 @@
+// Package erc20 provides base functionality for interacting with ERC20 tokens using the IERC20 standard.
 package erc20
 
 import (
@@ -22,7 +23,7 @@ const (
 
 func (s BaseERC20Signature) GetHex() string {
 	hash := crypto.NewKeccakState()
-	hash.Write([]byte(s))
+	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
 	selector := hash.Sum(nil)[:4]
 	return hex.EncodeToString(selector)
 }

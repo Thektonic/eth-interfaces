@@ -1,6 +1,5 @@
-package merged
-
 // Package merged provides a unified interface that combines multiple NFT interaction extensions such as enumerable and royalties.
+package merged
 
 import (
 	"math/big"
@@ -30,8 +29,13 @@ const (
 	Royalties
 )
 
-// NewERC721SummedInteractions creates a new instance of IERC721SummedInteractions by initializing the specified extensions from the base NFT interactions.
-func NewERC721SummedInteractions(baseIERC721 *nft.ERC721Interactions, signatures []utils.Signature, extensions ...ExtensionEnum) (*IERC721SummedInteractions, error) {
+// NewERC721SummedInteractions creates a new instance of IERC721SummedInteractions by initializing
+// the specified extensions from the base NFT interactions.
+func NewERC721SummedInteractions(
+	baseIERC721 *nft.ERC721Interactions,
+	signatures []utils.Signature,
+	extensions ...ExtensionEnum,
+) (*IERC721SummedInteractions, error) {
 	var enum *enumerable.ERC721EnumerableInteractions = nil
 	var roy *royalties.IERC721RoyaltiesInteractions = nil
 	var err error

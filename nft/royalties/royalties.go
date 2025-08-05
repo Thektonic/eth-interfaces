@@ -1,6 +1,5 @@
+// Package royalties provides functions to interact with ERC721 royalty properties.
 package royalties
-
-// Package royalties provides functions to interact with ERC721 royalties.
 
 import (
 	"math/big"
@@ -26,8 +25,11 @@ type RoyaltyInfos struct {
 	RoyaltyAmount *big.Int
 }
 
-// NewIERC721RoyaltiesInteractions creates a new instance of IERC721RoyaltiesInteractions.
-func NewERC721RoyaltiesInteractions(baseIERC721 *nft.ERC721Interactions, signatures []IERC721RoyaltiesSignature) (*IERC721RoyaltiesInteractions, error) {
+// NewERC721RoyaltiesInteractions creates a new instance of IERC721RoyaltiesInteractions.
+func NewERC721RoyaltiesInteractions(
+	baseIERC721 *nft.ERC721Interactions,
+	signatures []IERC721RoyaltiesSignature,
+) (*IERC721RoyaltiesInteractions, error) {
 	ierc721Royalties, err := ERC721Complete.NewERC721Complete(baseIERC721.GetAddress(), baseIERC721.Client)
 	session := ERC721Complete.ERC721CompleteSession{
 		Contract:     ierc721Royalties,

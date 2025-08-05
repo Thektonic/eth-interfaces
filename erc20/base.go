@@ -1,6 +1,5 @@
+// Package erc20 provides base functionality for interacting with ERC20 tokens using the IERC20 standard.
 package erc20
-
-// Package nft provides base functionality for interacting with NFTs using the IERC721 standard.
 
 import (
 	"math/big"
@@ -23,7 +22,7 @@ import (
 type ERC20Interactions struct {
 	*base.BaseInteractions
 	ierc20Session *ERC20Burnable.ERC20BurnableSession
-	nftAddress    common.Address
+	erc20Address  common.Address
 	callError     func(string, error) *base.CallError
 }
 
@@ -34,7 +33,6 @@ func NewIERC20Interactions(
 	signatures []BaseERC20Signature,
 	transactOps ...*bind.TransactOpts,
 ) (*ERC20Interactions, error) {
-
 	var converted []utils.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
@@ -82,9 +80,9 @@ func NewIERC20Interactions(
 	return ierc20Asession, nil
 }
 
-// GetNFTAddress returns the NFT contract address.
+// GetAddress returns the ERC20 contract address.
 func (d *ERC20Interactions) GetAddress() common.Address {
-	return d.nftAddress
+	return d.erc20Address
 }
 
 // GetSession returns the current session used for NFT interactions.
@@ -94,7 +92,7 @@ func (d *ERC20Interactions) GetSession() ERC20Burnable.ERC20BurnableSession {
 
 // GetBalance retrieves the balance of NFTs for the associated address.
 func (d *ERC20Interactions) GetBalance() (*big.Int, error) {
-	balance, err := d.ierc20Session.BalanceOf(d.Address)
+	balance, err := d.ierc20Session.BalanceOf(d.BaseInteractions.Address)
 	if err != nil {
 		return nil, d.callError("erc20.BalanceOf()", err)
 	}

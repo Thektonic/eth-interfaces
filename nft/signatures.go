@@ -1,3 +1,4 @@
+// Package nft provides base functionality for interacting with NFTs using the IERC721 standard.
 package nft
 
 import (
@@ -23,7 +24,7 @@ const (
 
 func (s BaseNFTSignature) GetHex() string {
 	hash := crypto.NewKeccakState()
-	hash.Write([]byte(s))
+	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
 	selector := hash.Sum(nil)[:4]
 	return hex.EncodeToString(selector)
 }

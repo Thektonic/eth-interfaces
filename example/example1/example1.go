@@ -1,3 +1,4 @@
+// Package example1 demonstrates basic usage of the eth-interfaces library.
 package example1
 
 import (
@@ -29,6 +30,7 @@ func Example1() {
 	// Get the private key from the .env file and convert it to an ECDSA key
 	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
 	if err != nil {
+		client.Close()
 		log.Fatal("error reading the PRIVATE_KEY env var: ", err)
 	}
 

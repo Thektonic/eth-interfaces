@@ -1,6 +1,5 @@
-package nft
-
 // Package nft provides base functionality for interacting with NFTs using the IERC721 standard.
+package nft
 
 import (
 	"errors"
@@ -35,7 +34,6 @@ func NewERC721Interactions(
 	signatures []BaseNFTSignature,
 	transactOps ...*bind.TransactOpts,
 ) (*ERC721Interactions, error) {
-
 	var converted []utils.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
@@ -83,7 +81,7 @@ func NewERC721Interactions(
 	return erc721Interactions, nil
 }
 
-// GetNFTAddress returns the NFT contract address.
+// GetAddress returns the NFT contract address.
 func (d *ERC721Interactions) GetAddress() common.Address {
 	return d.nftAddress
 }
@@ -95,7 +93,7 @@ func (d *ERC721Interactions) GetSession() ERC721Complete.ERC721CompleteSession {
 
 // GetBalance retrieves the balance of NFTs for the associated address.
 func (d *ERC721Interactions) GetBalance() (*big.Int, error) {
-	balance, err := d.erc721Session.BalanceOf(d.Address)
+	balance, err := d.erc721Session.BalanceOf(d.BaseInteractions.Address)
 	if err != nil {
 		return nil, d.callError("nft.BalanceOf()", err)
 	}
@@ -104,7 +102,7 @@ func (d *ERC721Interactions) GetBalance() (*big.Int, error) {
 
 // TransferTo transfers a specific token to another address after verifying ownership.
 func (d *ERC721Interactions) TransferTo(to common.Address, tokenID *big.Int) (*types.Transaction, error) {
-	tx, err := d.erc721Session.TransferFrom(d.Address, to, tokenID)
+	tx, err := d.erc721Session.TransferFrom(d.BaseInteractions.Address, to, tokenID)
 	if err != nil {
 		return nil, d.callError("nft.TransferFrom()", err)
 	}

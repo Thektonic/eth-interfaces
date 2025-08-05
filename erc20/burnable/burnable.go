@@ -1,6 +1,5 @@
+// Package burnable provides functions to interact with ERC20 burnable properties.
 package burnable
-
-// Package enumerable provides functions to interact with ERC721 enumerable properties.
 
 import (
 	"math/big"
@@ -14,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// IERC20Burnable wraps interactions with an IERC20Burnable contract, extending basic NFT interactions.
+// IERC20BurnableInteractions wraps interactions with an IERC20Burnable contract, extending basic ERC20 interactions.
 type IERC20BurnableInteractions struct {
 	*erc20.ERC20Interactions
 	erc20Burnable *ERC20Burnable.ERC20BurnableSession

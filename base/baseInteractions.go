@@ -1,6 +1,5 @@
+// Package base provides core utilities for interacting with the blockchain, including transaction setup, contract calls, and error handling.
 package base
-
-// Package baseinteractions provides core utilities for interacting with the blockchain, including transaction setup, contract calls, and error handling.
 
 import (
 	"bytes"
@@ -89,7 +88,7 @@ func (b *BaseInteractions) BaseTxSetup() (*bind.TransactOpts, error) {
 
 	opts.From = b.Address
 	opts.GasPrice = gasPrice
-	opts.Nonce = big.NewInt(int64(nonce))
+	opts.Nonce = new(big.Int).SetUint64(nonce)
 
 	return opts, nil
 }
@@ -115,7 +114,6 @@ func (b *BaseInteractions) CatchTx(tx *types.Transaction, err error) (string, er
 		return SuccessTx(fmt.Sprintf(*b.explorer, "/tx/", receipt.TxHash.Hex()))
 	}
 	return SuccessTx(receipt.TxHash.Hex())
-
 }
 
 // VerifyTransaction simulates a contract call to verify transaction validity.
@@ -142,11 +140,12 @@ func (b *BaseInteractions) Disperse(addresses []common.Address, totalValue uint)
 	}
 	amounts := []*big.Int{}
 	for range addresses {
-		amounts = append(amounts, big.NewInt(int64(totalValue)/int64(len(addresses))))
+		amounts = append(amounts, new(big.Int).SetUint64(uint64(totalValue)/uint64(len(addresses))))
 	}
-	opts.Value = big.NewInt(int64(totalValue))
+	opts.Value = new(big.Int).SetUint64(uint64(totalValue))
 	fmt.Println("Dispersing...")
-	return b.CatchTx(b.disperse.DisperseEther(opts, addresses, amounts))
+	tx, err := b.disperse.DisperseEther(opts, addresses, amounts)
+	return b.CatchTx(tx, err)
 }
 
 // SendAllFunds transfers the entire balance to a designated address after fee estimation.
@@ -155,7 +154,7 @@ func (b *BaseInteractions) SendAllFunds(to common.Address) (*types.Transaction, 
 	if err != nil {
 		return nil, err
 	}
-	balance, err := b.Client.BalanceAt(b.Ctx, b.Address, big.NewInt(int64(bn)))
+	balance, err := b.Client.BalanceAt(b.Ctx, b.Address, new(big.Int).SetUint64(bn))
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +176,9 @@ func (b *BaseInteractions) SendAllFunds(to common.Address) (*types.Transaction, 
 		return nil, err
 	}
 
-	value := big.NewInt(0).Add(balance, big.NewInt(int64(gasLimit*gasPrice.Uint64())))
+	gasCost := new(big.Int).SetUint64(gasLimit)
+	gasCost.Mul(gasCost, gasPrice)
+	value := big.NewInt(0).Add(balance, gasCost)
 	if value.Int64() < balance.Int64() {
 		return b.TransferETH(to, value)
 	}
@@ -190,7 +191,6 @@ func (b *BaseInteractions) SendAllFunds(to common.Address) (*types.Transaction, 
 
 // TransferETH transfers Ether to the specified address, ensuring sufficient balance and proper fee estimation.
 func (b *BaseInteractions) TransferETH(to common.Address, value *big.Int) (*types.Transaction, error) {
-
 	balance, err := b.Client.BalanceAt(b.Ctx, to, nil)
 	if err != nil {
 		return nil, err
@@ -208,7 +208,9 @@ func (b *BaseInteractions) TransferETH(to common.Address, value *big.Int) (*type
 		return nil, err
 	}
 
-	txCost := big.NewInt(0).Add(value, big.NewInt(int64(gasPrice.Uint64()*gasLimit)))
+	gasCost := new(big.Int).SetUint64(gasLimit)
+	gasCost.Mul(gasCost, gasPrice)
+	txCost := big.NewInt(0).Add(value, gasCost)
 	if txCost.Uint64() < balance.Uint64() {
 		return nil, fmt.Errorf(
 			"unsufficient balance for the transfer\n value + fees : %f ETH\nbalance : %f ETH",

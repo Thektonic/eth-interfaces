@@ -1,3 +1,4 @@
+// Package contractextension provides interfaces and utilities for extending contract functionality.
 package contractextension
 
 import (

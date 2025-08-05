@@ -1,3 +1,4 @@
+// Package enumerable provides functions to interact with ERC721 enumerable properties.
 package enumerable
 
 import (
@@ -16,7 +17,7 @@ const (
 
 func (s IERC721EnumerableSignature) GetHex() string {
 	hash := crypto.NewKeccakState()
-	hash.Write([]byte(s))
+	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error
 	selector := hash.Sum(nil)[:4]
 	return hex.EncodeToString(selector)
 }

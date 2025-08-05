@@ -32,7 +32,8 @@ func Test_DeploySuccessfully(t *testing.T) {
 	backend.Close()
 }
 
-// Test_Instantiation verifies that the NFT interactions interface is correctly instantiated using various contracts, including a valid NFT contract, an empty contract, and an ERC20 contract.
+// Test_Instantiation verifies that the NFT interactions interface is correctly instantiated
+// using various contracts, including a valid NFT contract, an empty contract, and an ERC20 contract.
 func Test_Instantiation(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := utils.SetupBlockchain(t,
 		ERC721Complete.ERC721CompleteABI,
@@ -94,7 +95,11 @@ func Test_Instantiation(t *testing.T) {
 	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			_, err := erc20.NewIERC20Interactions(baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol, erc20.TokenURI})
+			_, err := erc20.NewIERC20Interactions(
+				baseInteractions,
+				tt.ContractAddr,
+				[]erc20.BaseERC20Signature{erc20.Name, erc20.Symbol, erc20.TokenURI},
+			)
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")

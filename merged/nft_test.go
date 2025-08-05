@@ -16,7 +16,6 @@ import (
 
 // TestAllInfosSuccess tests the successful execution of AllInfos with valid dummyBase and both extensions enabled.
 func Test_Instantiation(t *testing.T) {
-
 	type args struct {
 		abiString      string
 		byteCodeString string
@@ -79,7 +78,6 @@ func Test_Instantiation(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-
 			backend, _, contractAddr, privKey, err := utils.SetupBlockchain(t,
 				tt.Args.abiString,
 				tt.Args.byteCodeString,
@@ -104,5 +102,4 @@ func Test_Instantiation(t *testing.T) {
 			}
 		})
 	}
-
 }

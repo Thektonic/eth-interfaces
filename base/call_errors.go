@@ -17,12 +17,10 @@ func (d *BaseInteractions) WrapCallError(abiString, field string, err error) *Ca
 	if err == nil {
 		return nil
 	}
-	if err != nil {
-		if err := d.ManageCustomContractError(abiString, err); err != nil {
-			return &CallError{
-				Field: field,
-				Err:   err,
-			}
+	if customErr := d.ManageCustomContractError(abiString, err); customErr != nil {
+		return &CallError{
+			Field: field,
+			Err:   customErr,
 		}
 	}
 	return &CallError{

@@ -1,6 +1,5 @@
-package enumerable
-
 // Package enumerable provides functions to interact with ERC721 enumerable properties.
+package enumerable
 
 import (
 	"math/big"
@@ -21,7 +20,10 @@ type ERC721EnumerableInteractions struct {
 }
 
 // NewERC721EnumerableInteractions creates a new enumerable interaction instance using the provided base NFT interactions.
-func NewERC721EnumerableInteractions(baseIERC721 *nft.ERC721Interactions, signatures []IERC721EnumerableSignature) (*ERC721EnumerableInteractions, error) {
+func NewERC721EnumerableInteractions(
+	baseIERC721 *nft.ERC721Interactions,
+	signatures []IERC721EnumerableSignature,
+) (*ERC721EnumerableInteractions, error) {
 	ierc721Enumerable, err := ERC721Complete.NewERC721Complete(baseIERC721.GetAddress(), baseIERC721.Client)
 	if err != nil {
 		return nil, customerrors.WrapinterfacingError("erc721Enumerable", err)

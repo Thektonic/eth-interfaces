@@ -1,3 +1,4 @@
+// Package customerrors provides custom error types for contract interface operations.
 package customerrors
 
 import "fmt"
