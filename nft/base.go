@@ -82,9 +82,10 @@ func NewERC721Interactions(
 			CallError:        callError,
 		},
 	}
-
-	if err := contractextension.SimulateCall(baseInteractions.Ctx, ERC721Complete.ERC721CompleteABI, "name", erc721Interactions); err != nil {
-		return nil, err
+	if len(signatures) > 0 {
+		if err := contractextension.SimulateCall(baseInteractions.Ctx, ERC721Complete.ERC721CompleteABI, string(signatures[0]), erc721Interactions); err != nil {
+			return nil, err
+		}
 	}
 
 	return erc721Interactions, nil
