@@ -112,6 +112,15 @@ func (d *Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Tr
 	return tx, nil
 }
 
+// Decimals returns the number of decimals used to get its user representation.
+func (d *Interactions) Decimals() (uint8, error) {
+	decimals, err := d.ierc20Session.Decimals()
+	if err != nil {
+		return 0, d.callError("erc20.Decimals()", err)
+	}
+	return decimals, nil
+}
+
 // TotalSupply returns the total number of NFTs minted.
 func (d *Interactions) TotalSupply() (*big.Int, error) {
 	supply, err := d.ierc20Session.TotalSupply()
