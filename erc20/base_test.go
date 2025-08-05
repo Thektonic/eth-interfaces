@@ -242,7 +242,7 @@ func Test_TotalSupply(t *testing.T) {
 
 // Test_Decimals verifies that the total supply of NFTs is correctly reported by the contract.
 func Test_Decimals(t *testing.T) {
-	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
 		ERC20Burnable.ERC20BurnableABI,
 		ERC20Burnable.ERC20BurnableBin,
 	)

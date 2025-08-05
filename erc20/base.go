@@ -113,7 +113,7 @@ func (d *Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Tr
 }
 
 // Decimals returns the number of decimals used to get its user representation.
-func (d *ERC20Interactions) Decimals() (uint8, error) {
+func (d *Interactions) Decimals() (uint8, error) {
 	decimals, err := d.ierc20Session.Decimals()
 	if err != nil {
 		return 0, d.callError("erc20.Decimals()", err)
