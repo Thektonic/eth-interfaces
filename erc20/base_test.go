@@ -240,6 +240,51 @@ func Test_TotalSupply(t *testing.T) {
 	}
 }
 
+// Test_Decimals verifies that the total supply of NFTs is correctly reported by the contract.
+func Test_Decimals(t *testing.T) {
+	backend, _, contractAddress, privKey, err := utils.SetupBlockchain(t,
+		ERC20Burnable.ERC20BurnableABI,
+		ERC20Burnable.ERC20BurnableBin,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer backend.Close()
+
+	testCases := []struct {
+		Name           string
+		ContractAddr   common.Address
+		ExpectedResult uint8
+		ExpectError    bool
+		ExpectedError  string
+	}{
+		{
+			Name:           "OK - Successfully get NFT decimals",
+			ExpectedResult: 18,
+			ContractAddr:   *contractAddress,
+		},
+	}
+
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals})
+			if tt.ExpectError {
+				if err == nil {
+					t.Error("expected error but there's none")
+					return
+				}
+				assert.Equal(t, tt.ExpectedError, err.Error())
+			} else {
+				assert.Nil(t, err, "failed to create interactions interface, error: %w", err)
+				decimals, err := session.Decimals()
+				assert.Nil(t, err)
+				assert.Equal(t, tt.ExpectedResult, decimals)
+			}
+		})
+	}
+}
+
 // Test_Transfer tests the transfer functionality and ensures that the token transfer behaves as expected.
 func Test_Transfer(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
