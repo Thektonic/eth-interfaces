@@ -276,7 +276,6 @@ func (b *Interactions) CheckSignatures(contractAddress common.Address, signature
 	for _, signature := range signatures {
 		sigHex := signature.GetHex()
 		if !strings.Contains(byteCodeHex, sigHex[:8]) {
-
 			implAddress, err := hex.GetImplementationAddress(b.Client, contractAddress)
 			if err != nil {
 				return customerrors.WrapinterfacingError("CheckSignatures", err)
@@ -292,11 +291,10 @@ func (b *Interactions) CheckSignatures(contractAddress common.Address, signature
 					}
 				}
 				continue
-			} else {
-				supported, err := hex.CheckDiamondFunction(b.Client, contractAddress, signature.GetSelector())
-				if err != nil || !supported {
-					notSupported += fmt.Sprintf("%s: %s\n", signature, sigHex[:8])
-				}
+			}
+			supported, err := hex.CheckDiamondFunction(b.Client, contractAddress, signature.GetSelector())
+			if err != nil || !supported {
+				notSupported += fmt.Sprintf("%s: %s\n", signature, sigHex[:8])
 			}
 		}
 	}

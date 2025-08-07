@@ -29,6 +29,7 @@ func (s ERC20BurnableSignatures) String() string {
 	return string(s)
 }
 
+// GetSelector returns the Keccak256 hash selector for the ERC20 burnable signature
 func (s ERC20BurnableSignatures) GetSelector() []byte {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error

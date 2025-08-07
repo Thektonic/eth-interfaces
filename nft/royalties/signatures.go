@@ -28,6 +28,7 @@ func (s IERC721RoyaltiesSignature) String() string {
 	return string(s)
 }
 
+// GetSelector returns the Keccak256 hash selector for the ERC721 royalties signature
 func (s IERC721RoyaltiesSignature) GetSelector() []byte {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error

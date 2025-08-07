@@ -51,6 +51,7 @@ func DeployContract(auth *bind.TransactOpts,
 	)
 }
 
+// GetImplementationAddress retrieves the implementation address from an EIP-1967 proxy contract
 func GetImplementationAddress(client simulated.Client, proxyAddr common.Address) (common.Address, error) {
 	// EIP-1967 implementation slot
 	slot := common.HexToHash("0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc")
@@ -63,6 +64,7 @@ func GetImplementationAddress(client simulated.Client, proxyAddr common.Address)
 	return common.BytesToAddress(result), nil
 }
 
+// CheckDiamondFunction checks if a function selector is supported by a Diamond proxy contract
 func CheckDiamondFunction(client simulated.Client, diamondAddr common.Address, funcSelector []byte) (bool, error) {
 	var selector [4]byte
 	copy(selector[:], funcSelector)
