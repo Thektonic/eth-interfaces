@@ -4,4 +4,6 @@ package hex
 // Signature defines the interface for function signatures
 type Signature interface {
 	GetHex() string
+	String() string
+	GetSelector() []byte
 }

@@ -1,4 +1,3 @@
-// Package hex provides common utilities and constants for Ethereum contract interactions.
 package hex
 
 import (
@@ -45,3 +44,23 @@ func ParseEther(a *big.Int) float64 {
 	fa, _ := a.Float64()
 	return fa / (1e18)
 }
+
+const diamondLoupeABI = `[{
+    "type": "function",
+    "name": "facetAddress",
+    "inputs": [
+    {
+        "name": "_functionSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+    }
+    ],
+    "outputs": [
+    {
+        "name": "facetAddress_",
+        "type": "address",
+        "internalType": "address"
+    }
+    ],
+    "stateMutability": "view"
+}]`

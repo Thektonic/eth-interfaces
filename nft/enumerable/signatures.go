@@ -18,10 +18,23 @@ const (
 	TokenByIndex IERC721EnumerableSignature = "tokenByIndex(uint256)" // #nosec G101
 )
 
-// GetHex returns the hex representation of the function signature
-func (s IERC721EnumerableSignature) GetHex() string {
+// computeHash returns the Keccak256 hash of the function signature
+func (s IERC721EnumerableSignature) computeHash() []byte {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error
-	selector := hash.Sum(nil)[:4]
-	return hex.EncodeToString(selector)
+	return hash.Sum(nil)
+}
+
+// GetHex returns the hex representation of the function signature
+func (s IERC721EnumerableSignature) GetHex() string {
+	return hex.EncodeToString(s.computeHash())
+}
+
+func (s IERC721EnumerableSignature) String() string {
+	return string(s)
+}
+
+// GetSelector returns the Keccak256 hash selector for the ERC721 enumerable signature
+func (s IERC721EnumerableSignature) GetSelector() []byte {
+	return s.computeHash()[:4]
 }
