@@ -35,6 +35,17 @@ const (
 func (s BaseERC20Signature) GetHex() string {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
-	selector := hash.Sum(nil)[:4]
+	selector := hash.Sum(nil)
 	return hex.EncodeToString(selector)
+}
+
+func (s BaseERC20Signature) String() string {
+	return string(s)
+}
+
+// GetSelector returns the hex representation of the function signature
+func (s BaseERC20Signature) GetSelector() []byte {
+	hash := crypto.NewKeccakState()
+	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
+	return hash.Sum(nil)[:4]
 }

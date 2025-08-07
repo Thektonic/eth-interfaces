@@ -20,6 +20,16 @@ const (
 func (s IERC721RoyaltiesSignature) GetHex() string {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error
-	selector := hash.Sum(nil)[:4]
+	selector := hash.Sum(nil)
 	return hex.EncodeToString(selector)
+}
+
+func (s IERC721RoyaltiesSignature) String() string {
+	return string(s)
+}
+
+func (s IERC721RoyaltiesSignature) GetSelector() []byte {
+	hash := crypto.NewKeccakState()
+	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error
+	return hash.Sum(nil)
 }

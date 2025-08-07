@@ -274,12 +274,29 @@ func (b *Interactions) CheckSignatures(contractAddress common.Address, signature
 	notSupported := ""
 	byteCodeHex := common.Bytes2Hex(byteCode)
 	for _, signature := range signatures {
-		selector := hex.GetFunctionSelector(signature)
-		if !strings.Contains(byteCodeHex, selector) {
-			if notSupported != "" {
-				notSupported = fmt.Sprintf("%s, %s: %s", notSupported, signature, selector)
+		sigHex := signature.GetHex()
+		if !strings.Contains(byteCodeHex, sigHex[:8]) {
+
+			implAddress, err := hex.GetImplementationAddress(b.Client, contractAddress)
+			if err != nil {
+				return customerrors.WrapinterfacingError("CheckSignatures", err)
+			}
+			if implAddress != (common.Address{}) {
+				byteCode, err := b.Client.CodeAt(b.Ctx, implAddress, nil)
+				if err != nil {
+					notSupported += fmt.Sprintf("%s: %s\n", signature, sigHex[:8])
+				} else {
+					byteCodeHex := common.Bytes2Hex(byteCode)
+					if !strings.Contains(byteCodeHex, sigHex[:8]) {
+						notSupported += fmt.Sprintf("%s: %s\n", signature, sigHex[:8])
+					}
+				}
+				continue
 			} else {
-				notSupported = fmt.Sprintf("%s: %s", signature, selector)
+				supported, err := hex.CheckDiamondFunction(b.Client, contractAddress, signature.GetSelector())
+				if err != nil || !supported {
+					notSupported += fmt.Sprintf("%s: %s\n", signature, sigHex[:8])
+				}
 			}
 		}
 	}

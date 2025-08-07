@@ -21,6 +21,16 @@ const (
 func (s ERC20BurnableSignatures) GetHex() string {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
-	selector := hash.Sum(nil)[:4]
+	selector := hash.Sum(nil)
 	return hex.EncodeToString(selector)
+}
+
+func (s ERC20BurnableSignatures) String() string {
+	return string(s)
+}
+
+func (s ERC20BurnableSignatures) GetSelector() []byte {
+	hash := crypto.NewKeccakState()
+	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
+	return hash.Sum(nil)
 }

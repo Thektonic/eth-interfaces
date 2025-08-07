@@ -2,19 +2,17 @@
 package hex
 
 import (
+	"context"
+	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient/simulated"
 )
-
-// GetFunctionSelector returns the function selector for a given signature
-func GetFunctionSelector(signature Signature) string {
-	return signature.GetHex()
-}
 
 // GetEncodedFunction encodes a function call with the given parameters
 func GetEncodedFunction(abiString, signature string, params ...interface{}) ([]byte, error) {
@@ -51,4 +49,38 @@ func DeployContract(auth *bind.TransactOpts,
 		client,
 		params...,
 	)
+}
+
+func GetImplementationAddress(client simulated.Client, proxyAddr common.Address) (common.Address, error) {
+	// EIP-1967 implementation slot
+	slot := common.HexToHash("0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc")
+
+	result, err := client.StorageAt(context.Background(), proxyAddr, slot, nil)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	return common.BytesToAddress(result), nil
+}
+
+func CheckDiamondFunction(client simulated.Client, diamondAddr common.Address, funcSelector []byte) (bool, error) {
+	var selector [4]byte
+	copy(selector[:], funcSelector)
+
+	data, err := GetEncodedFunction(diamondLoupeABI, "facetAddress", selector)
+	if err != nil {
+		return false, fmt.Errorf("failed to encode facetAddress call: %w", err)
+	}
+
+	msg := ethereum.CallMsg{
+		To:   &diamondAddr,
+		Data: data,
+	}
+
+	result, err := client.CallContract(context.Background(), msg, nil)
+	if err != nil {
+		return false, err
+	}
+
+	return common.BytesToAddress(result) != (common.Address{}), nil
 }
