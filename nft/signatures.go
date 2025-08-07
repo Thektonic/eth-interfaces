@@ -33,12 +33,16 @@ const (
 	SafeTransferFrom BaseNFTSignature = "safeTransferFrom(address,address,uint256)"
 )
 
-// GetHex returns the hex representation of the function signature
-func (s BaseNFTSignature) GetHex() string {
+// computeHash returns the Keccak256 hash of the function signature
+func (s BaseNFTSignature) computeHash() []byte {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
-	selector := hash.Sum(nil)
-	return hex.EncodeToString(selector)
+	return hash.Sum(nil)
+}
+
+// GetHex returns the hex representation of the function signature
+func (s BaseNFTSignature) GetHex() string {
+	return hex.EncodeToString(s.computeHash())
 }
 
 func (s BaseNFTSignature) String() string {
@@ -47,7 +51,5 @@ func (s BaseNFTSignature) String() string {
 
 // GetSelector returns the Keccak256 hash selector for the base NFT signature
 func (s BaseNFTSignature) GetSelector() []byte {
-	hash := crypto.NewKeccakState()
-	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
-	return hash.Sum(nil)
+	return s.computeHash()[:4]
 }

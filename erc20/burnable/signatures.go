@@ -17,12 +17,16 @@ const (
 	BurnFrom ERC20BurnableSignatures = "burnFrom(address,uint256)"
 )
 
-// GetHex returns the hex representation of the function signature
-func (s ERC20BurnableSignatures) GetHex() string {
+// computeHash returns the Keccak256 hash of the function signature
+func (s ERC20BurnableSignatures) computeHash() []byte {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
-	selector := hash.Sum(nil)
-	return hex.EncodeToString(selector)
+	return hash.Sum(nil)
+}
+
+// GetHex returns the hex representation of the function signature
+func (s ERC20BurnableSignatures) GetHex() string {
+	return hex.EncodeToString(s.computeHash())
 }
 
 func (s ERC20BurnableSignatures) String() string {
@@ -31,7 +35,5 @@ func (s ERC20BurnableSignatures) String() string {
 
 // GetSelector returns the Keccak256 hash selector for the ERC20 burnable signature
 func (s ERC20BurnableSignatures) GetSelector() []byte {
-	hash := crypto.NewKeccakState()
-	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
-	return hash.Sum(nil)
+	return s.computeHash()[:4]
 }

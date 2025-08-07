@@ -31,12 +31,16 @@ const (
 	SafeTransferFrom BaseERC20Signature = "safeTransferFrom(address,address,uint256)"
 )
 
-// GetHex returns the hex representation of the function signature
-func (s BaseERC20Signature) GetHex() string {
+// computeHash returns the Keccak256 hash of the function signature
+func (s BaseERC20Signature) computeHash() []byte {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
-	selector := hash.Sum(nil)
-	return hex.EncodeToString(selector)
+	return hash.Sum(nil)
+}
+
+// GetHex returns the hex representation of the function signature
+func (s BaseERC20Signature) GetHex() string {
+	return hex.EncodeToString(s.computeHash())
 }
 
 func (s BaseERC20Signature) String() string {
@@ -45,7 +49,5 @@ func (s BaseERC20Signature) String() string {
 
 // GetSelector returns the hex representation of the function signature
 func (s BaseERC20Signature) GetSelector() []byte {
-	hash := crypto.NewKeccakState()
-	_, _ = hash.Write([]byte(s)) // hash.Write never returns an error
-	return hash.Sum(nil)[:4]
+	return s.computeHash()[:4]
 }

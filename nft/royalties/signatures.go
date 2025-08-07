@@ -16,12 +16,16 @@ const (
 	RoyaltyInfo IERC721RoyaltiesSignature = "royaltyInfo(uint256,uint256)"
 )
 
-// GetHex returns the hex representation of the function signature
-func (s IERC721RoyaltiesSignature) GetHex() string {
+// computeHash returns the Keccak256 hash of the function signature
+func (s IERC721RoyaltiesSignature) computeHash() []byte {
 	hash := crypto.NewKeccakState()
 	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error
-	selector := hash.Sum(nil)
-	return hex.EncodeToString(selector)
+	return hash.Sum(nil)
+}
+
+// GetHex returns the hex representation of the function signature
+func (s IERC721RoyaltiesSignature) GetHex() string {
+	return hex.EncodeToString(s.computeHash())
 }
 
 func (s IERC721RoyaltiesSignature) String() string {
@@ -30,7 +34,5 @@ func (s IERC721RoyaltiesSignature) String() string {
 
 // GetSelector returns the Keccak256 hash selector for the ERC721 royalties signature
 func (s IERC721RoyaltiesSignature) GetSelector() []byte {
-	hash := crypto.NewKeccakState()
-	_, _ = hash.Write([]byte(string(s))) // hash.Write never returns an error
-	return hash.Sum(nil)
+	return s.computeHash()[:4]
 }
