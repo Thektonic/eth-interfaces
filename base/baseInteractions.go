@@ -28,12 +28,13 @@ import (
 
 // Interactions holds the context, client, sender address, private key, disperse contract, and explorer URL.
 type Interactions struct {
-	Ctx      context.Context
-	Client   simulated.Client
-	Address  common.Address
-	pk       *ecdsa.PrivateKey
-	disperse *Disperse.Disperse
-	explorer *string
+	Ctx         context.Context
+	Client      simulated.Client
+	Address     common.Address
+	pk          *ecdsa.PrivateKey
+	maxGasPrice *big.Int
+	disperse    *Disperse.Disperse
+	explorer    *string
 }
 
 // IBaseInteractions defines the interface for verifying transactions.
@@ -42,7 +43,12 @@ type IBaseInteractions interface {
 }
 
 // NewBaseInteractions creates a new instance of BaseInteractions for blockchain interaction.
-func NewBaseInteractions(client simulated.Client, pk *ecdsa.PrivateKey, explorer *string) *Interactions {
+func NewBaseInteractions(
+	client simulated.Client,
+	pk *ecdsa.PrivateKey,
+	explorer *string,
+	maxGasPrice ...*big.Int,
+) *Interactions {
 	ctx := context.TODO()
 	_, err := client.BlockNumber(ctx)
 	if err != nil {
@@ -56,7 +62,20 @@ func NewBaseInteractions(client simulated.Client, pk *ecdsa.PrivateKey, explorer
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	return &Interactions{ctx, client, fromAddress, pk, nil, explorer}
+	return &Interactions{
+		ctx,
+		client,
+		fromAddress,
+		pk,
+		func() *big.Int {
+			if len(maxGasPrice) > 0 {
+				return maxGasPrice[0]
+			}
+			return nil
+		}(),
+		nil,
+		explorer,
+	}
 }
 
 // SetDisperse initializes the disperse contract for multi-address fund transfers.
@@ -87,8 +106,12 @@ func (b *Interactions) BaseTxSetup() (*bind.TransactOpts, error) {
 		return nil, err
 	}
 
-	opts.From = b.Address
+	if b.maxGasPrice != nil && b.maxGasPrice.Cmp(gasPrice) < 0 {
+		gasPrice = b.maxGasPrice
+	}
 	opts.GasPrice = gasPrice
+
+	opts.From = b.Address
 	opts.Nonce = new(big.Int).SetUint64(nonce)
 
 	return opts, nil
