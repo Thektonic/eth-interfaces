@@ -11,7 +11,7 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/erc20"
 	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC20Burnable"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/testingtools"
@@ -61,8 +61,8 @@ func Test_Instantiation(t *testing.T) {
 	erc20Contract, tx, _, err := hex.DeployContract(
 		auth,
 		backend.Client(),
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20burnableMetaData.ABI,
+		inferences.Ierc20burnableMetaData.Bin,
 	)
 	if err != nil {
 		t.Fatalf("failed to deploy ERC20 contract: %s", err)
@@ -105,7 +105,7 @@ func Test_Instantiation(t *testing.T) {
 			_, err := erc20.NewIERC20Interactions(
 				baseInteractions,
 				tt.ContractAddr,
-				[]erc20.BaseERC20Signature{erc20.Name, erc20.Symbol, erc20.TokenURI},
+				[]erc20.BaseERC20Signature{erc20.Name, erc20.Symbol, erc20.TokenURI}, false,
 			)
 			if tt.ExpectError {
 				if err == nil {
@@ -691,7 +691,7 @@ func Test_TokenMetaInfos(t *testing.T) {
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	nft, err := erc20.NewIERC20Interactions(
-		base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol, erc20.TokenURI},
+		base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol, erc20.TokenURI}, false,
 	)
 	assert.Nil(t, err)
 

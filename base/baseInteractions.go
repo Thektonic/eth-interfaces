@@ -16,6 +16,7 @@ import (
 	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences/IERC165"
 	Disperse "github.com/Thektonic/eth-interfaces/inferences/disperse"
+	"github.com/Thektonic/eth-interfaces/transaction"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -28,13 +29,13 @@ import (
 
 // Interactions holds the context, client, sender address, private key, disperse contract, and explorer URL.
 type Interactions struct {
-	Ctx         context.Context
-	Client      simulated.Client
-	Address     common.Address
-	pk          *ecdsa.PrivateKey
-	maxGasPrice *big.Int
-	disperse    *Disperse.Disperse
-	explorer    *string
+	Ctx      context.Context
+	Client   simulated.Client
+	Address  common.Address
+	pk       *ecdsa.PrivateKey
+	disperse *Disperse.Disperse
+	explorer *string
+	txOpts   transaction.TxOptsBuilderFunc
 }
 
 // IBaseInteractions defines the interface for verifying transactions.
@@ -47,7 +48,7 @@ func NewBaseInteractions(
 	client simulated.Client,
 	pk *ecdsa.PrivateKey,
 	explorer *string,
-	maxGasPrice ...*big.Int,
+	txOptsFn ...transaction.TxOptsBuilderFunc,
 ) *Interactions {
 	ctx := context.TODO()
 	_, err := client.BlockNumber(ctx)
@@ -61,21 +62,13 @@ func NewBaseInteractions(
 		log.Fatal("error casting public key to ECDSA")
 	}
 
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	return &Interactions{
-		ctx,
-		client,
-		fromAddress,
-		pk,
-		func() *big.Int {
-			if len(maxGasPrice) > 0 {
-				return maxGasPrice[0]
-			}
-			return nil
-		}(),
-		nil,
-		explorer,
+	var txOptFn transaction.TxOptsBuilderFunc
+
+	if len(txOptsFn) != 0 {
+		txOptFn = txOptsFn[0]
 	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	return &Interactions{ctx, client, fromAddress, pk, nil, explorer, txOptFn}
 }
 
 // SetDisperse initializes the disperse contract for multi-address fund transfers.
@@ -87,6 +80,10 @@ func (b *Interactions) SetDisperse(address string) error {
 
 // BaseTxSetup sets up transaction options (nonce, gas price, chain ID, etc.) for sending a transaction.
 func (b *Interactions) BaseTxSetup() (*bind.TransactOpts, error) {
+	if b.txOpts != nil {
+		return b.txOpts()
+	}
+
 	gasPrice, err := b.Client.SuggestGasPrice(b.Ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to suggest gas price: %v", err)

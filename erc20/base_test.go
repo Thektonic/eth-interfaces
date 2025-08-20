@@ -11,7 +11,7 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/erc20"
 	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC20Burnable"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,8 +22,8 @@ import (
 // Test_DeploySuccessfully tests if the blockchain setup and contract deployment succeed without errors.
 func Test_DeploySuccessfully(t *testing.T) {
 	backend, _, _, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	_ = privKey
 	assert.Nil(t, err, "failed to create interactions interface, error: %w", err)
@@ -36,8 +36,8 @@ func Test_DeploySuccessfully(t *testing.T) {
 // using various contracts, including a valid ERC20 contract, an empty contract, and an NFT contract.
 func Test_Instantiation(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -109,6 +109,7 @@ func Test_Instantiation(t *testing.T) {
 					erc20.Symbol,
 					erc20.Decimals,
 				},
+				false,
 			)
 			if tt.ExpectError {
 				if err == nil {
@@ -131,8 +132,8 @@ func testERC20StringMethod(
 	methodCall func(*erc20.Interactions) (string, error),
 ) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -160,7 +161,7 @@ func testERC20StringMethod(
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{signature})
+			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{signature}, false)
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")
@@ -194,8 +195,8 @@ func Test_Symbol(t *testing.T) {
 // Test_TotalSupply verifies that the total supply of NFTs is correctly reported by the contract.
 func Test_TotalSupply(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -223,7 +224,7 @@ func Test_TotalSupply(t *testing.T) {
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TotalSupply})
+			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TotalSupply}, false)
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")
@@ -243,8 +244,8 @@ func Test_TotalSupply(t *testing.T) {
 // Test_Decimals verifies that the total supply of NFTs is correctly reported by the contract.
 func Test_Decimals(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -272,7 +273,7 @@ func Test_Decimals(t *testing.T) {
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals})
+			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals}, false)
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")
@@ -292,8 +293,8 @@ func Test_Decimals(t *testing.T) {
 // Test_Transfer tests the transfer functionality and ensures that the token transfer behaves as expected.
 func Test_Transfer(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -360,7 +361,7 @@ func Test_Transfer(t *testing.T) {
 				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
 			}
 			session, err := erc20.NewIERC20Interactions(
-				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TransferFrom},
+				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TransferFrom}, false,
 			)
 			if err != nil {
 				t.Fatal("setting up should not fail")
@@ -388,8 +389,8 @@ func Test_Transfer(t *testing.T) {
 // Test_GetBalance verifies that the NFT balance is correctly returned for an address.
 func Test_GetBalance(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -401,7 +402,7 @@ func Test_GetBalance(t *testing.T) {
 	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
-	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf}, auth)
+	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf}, false, auth)
 	assert.Nil(t, err)
 
 	balance, err := token.GetBalance()
@@ -412,8 +413,8 @@ func Test_GetBalance(t *testing.T) {
 // Test_BalanceOf verifies the BalanceOf function for different addresses.
 func Test_BalanceOf(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -425,7 +426,7 @@ func Test_BalanceOf(t *testing.T) {
 	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
-	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf})
+	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf}, false)
 	assert.Nil(t, err)
 
 	testCases := []struct {
@@ -467,8 +468,8 @@ func Test_BalanceOf(t *testing.T) {
 // Test_Approve tests the approval functionality for token transfers.
 func Test_Approve(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -513,7 +514,7 @@ func Test_Approve(t *testing.T) {
 			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
 
 			token, err := erc20.NewIERC20Interactions(
-				baseInteractions, *contractAddress, []erc20.BaseERC20Signature{erc20.Approve},
+				baseInteractions, *contractAddress, []erc20.BaseERC20Signature{erc20.Approve}, false,
 			)
 			if err != nil {
 				t.Fatal(err)
@@ -538,8 +539,8 @@ func Test_Approve(t *testing.T) {
 // Test_TokenMetaInfos verifies that the metadata (name, symbol, and URI) for a token is correctly retrieved.
 func Test_TokenMetaInfos(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20MetaData.ABI,
+		inferences.Ierc20MetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -551,7 +552,7 @@ func Test_TokenMetaInfos(t *testing.T) {
 	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
-	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol})
+	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol}, false)
 	assert.Nil(t, err)
 
 	// Test meta infos for token
