@@ -32,7 +32,7 @@ func NewERC721EnumerableInteractions(
 	}
 	err := baseIERC721.CheckSignatures(baseIERC721.GetAddress(), converted)
 	if err != nil {
-		return nil, customerrors.WrapinterfacingError("erc721Enumerable", err)
+		return nil, customerrors.WrapInterfacingError("erc721Enumerable", err)
 	}
 
 	ierc721Enumerable := inferences.NewIerc721()

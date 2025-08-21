@@ -1,3 +1,4 @@
 package transaction
 
-func DefaultUnpacker(b []byte) (byte, error) { return 0, nil }
+// DefaultUnpacker is a default implementation that returns zero values.
+func DefaultUnpacker([]byte) (byte, error) { return 0, nil }

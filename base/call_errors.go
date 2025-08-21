@@ -15,11 +15,11 @@ func (e *CallError) Error() string {
 }
 
 // WrapCallError wraps an error with contract call context information
-func (d *Interactions) WrapCallError(abiString, field string, err error) *CallError {
+func (i *Interactions) WrapCallError(abiString, field string, err error) *CallError {
 	if err == nil {
 		return nil
 	}
-	if customErr := d.ManageCustomContractError(abiString, err); customErr != nil {
+	if customErr := i.ManageCustomContractError(abiString, err); customErr != nil {
 		return &CallError{
 			Field: field,
 			Err:   customErr,
@@ -31,5 +31,5 @@ func (d *Interactions) WrapCallError(abiString, field string, err error) *CallEr
 	}
 }
 
-// UnWrap returns the underlying error
-func (e *CallError) UnWrap() error { return e.Err }
+// Unwrap returns the underlying error
+func (e *CallError) Unwrap() error { return e.Err }

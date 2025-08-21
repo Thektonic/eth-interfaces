@@ -35,7 +35,7 @@ func NewIERC20Burnable(
 
 	err := baseIERC20.CheckSignatures(baseIERC20.GetAddress(), converted)
 	if err != nil {
-		return nil, customerrors.WrapinterfacingError("ierc20Burnable", err)
+		return nil, customerrors.WrapInterfacingError("ierc20Burnable", err)
 	}
 
 	erc20Burnable := inferences.NewIerc20burnable()
@@ -50,18 +50,18 @@ func NewIERC20Burnable(
 // Burn destroys the specified token from the owner's balance.
 func (e *IERC20BurnableInteractions) Burn(qty *big.Int) (*types.Transaction, error) {
 	if e.Safe() {
-		_, err := transaction.Call(e.Interactions, e.erc20Burnable.PackBurn(qty), transaction.DefaultUnpacker)
+		_, err := transaction.Call(e, e.erc20Burnable.PackBurn(qty), transaction.DefaultUnpacker)
 		if err != nil {
 			fmt.Println(err.Error())
 			return nil, e.callError("erc20.Approve()", err)
 		}
 	}
 
-	txOpts, err := e.Interactions.BaseTxSetup()
+	txOpts, err := e.BaseTxSetup()
 	if err != nil {
 		return nil, e.callError("BaseTxSetup()", err)
 	}
-	tx, err := bind2.Transact(e.Interactions.Instance(), txOpts, e.erc20Burnable.PackBurn(qty))
+	tx, err := bind2.Transact(e.Instance(), txOpts, e.erc20Burnable.PackBurn(qty))
 	if err != nil {
 		return nil, e.callError("erc20.Burn()", err)
 	}
@@ -79,11 +79,11 @@ func (e *IERC20BurnableInteractions) BurnFrom(from common.Address, qty *big.Int)
 		}
 	}
 
-	txOpts, err := e.Interactions.BaseTxSetup()
+	txOpts, err := e.BaseTxSetup()
 	if err != nil {
 		return nil, e.callError("BaseTxSetup()", err)
 	}
-	tx, err := bind2.Transact(e.Interactions.Instance(), txOpts, e.erc20Burnable.PackBurnFrom(from, qty))
+	tx, err := bind2.Transact(e.Instance(), txOpts, e.erc20Burnable.PackBurnFrom(from, qty))
 	if err != nil {
 		return nil, e.callError("erc20.BurnFrom()", err)
 	}

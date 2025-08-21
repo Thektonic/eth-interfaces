@@ -19,7 +19,7 @@ import (
 )
 
 type session struct {
-	erc271   *inferences.Ierc721
+	erc721   *inferences.Ierc721
 	callOpts *bind.CallOpts
 	instance *bind.BoundContract
 }
@@ -53,13 +53,13 @@ func NewERC721Interactions(
 	}
 
 	if err := baseInteractions.CheckSignatures(address, converted); err != nil {
-		return nil, customerrors.WrapinterfacingError("CheckSignatures", err)
+		return nil, customerrors.WrapInterfacingError("CheckSignatures", err)
 	}
 
 	erc721Complete := inferences.NewIerc721()
 
 	erc721ASession := session{
-		erc271:   erc721Complete,
+		erc721:   erc721Complete,
 		callOpts: &bind.CallOpts{Pending: true, From: baseInteractions.Address},
 		instance: erc721Complete.Instance(baseInteractions.Client, address),
 	}
@@ -100,8 +100,8 @@ func (d *ERC721Interactions) GetSession() transaction.Session {
 func (d *ERC721Interactions) GetBalance() (*big.Int, error) {
 	balance, err := transaction.Call(
 		d.session,
-		d.session.erc271.PackBalanceOf(d.Address),
-		d.session.erc271.UnpackBalanceOf,
+		d.erc721.PackBalanceOf(d.Address),
+		d.erc721.UnpackBalanceOf,
 	)
 	if err != nil {
 		return nil, d.callError("nft.BalanceOf()", err)
@@ -114,7 +114,7 @@ func (d *ERC721Interactions) TransferTo(to common.Address, tokenID *big.Int) (*t
 	tx, err := transaction.Transact(
 		d,
 		d.session,
-		d.session.erc271.PackSafeTransferFrom(d.Address, to, tokenID),
+		d.erc721.PackSafeTransferFrom(d.Address, to, tokenID),
 		transaction.DefaultUnpacker,
 	)
 	if err != nil {
@@ -149,8 +149,8 @@ func (d *ERC721Interactions) TransferFirstOwnedTo(to common.Address) (*types.Tra
 func (d *ERC721Interactions) TotalSupply() (*big.Int, error) {
 	supply, err := transaction.Call(
 		d.session,
-		d.session.erc271.PackTotalSupply(),
-		d.session.erc271.UnpackTotalSupply,
+		d.erc721.PackTotalSupply(),
+		d.erc721.UnpackTotalSupply,
 	)
 	if err != nil {
 		return nil, d.callError("nft.TotalSupply()", err)
@@ -162,8 +162,8 @@ func (d *ERC721Interactions) TotalSupply() (*big.Int, error) {
 func (d *ERC721Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
 	balance, err := transaction.Call(
 		d.session,
-		d.session.erc271.PackBalanceOf(owner),
-		d.session.erc271.UnpackBalanceOf,
+		d.erc721.PackBalanceOf(owner),
+		d.erc721.UnpackBalanceOf,
 	)
 	if err != nil {
 		return nil, d.callError("nft.BalanceOf()", err)
@@ -175,8 +175,8 @@ func (d *ERC721Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
 func (d *ERC721Interactions) OwnerOf(tokenID *big.Int) (common.Address, error) {
 	owner, err := transaction.Call(
 		d.session,
-		d.session.erc271.PackOwnerOf(tokenID),
-		d.session.erc271.UnpackOwnerOf,
+		d.erc721.PackOwnerOf(tokenID),
+		d.erc721.UnpackOwnerOf,
 	)
 	if err != nil {
 		return common.Address{}, d.callError("nft.OwnerOf()", err)
@@ -189,7 +189,7 @@ func (d *ERC721Interactions) Approve(to common.Address, tokenID *big.Int) (*type
 	tx, err := transaction.Transact(
 		d,
 		d.session,
-		d.session.erc271.PackApprove(to, tokenID),
+		d.erc721.PackApprove(to, tokenID),
 		transaction.DefaultUnpacker,
 	)
 	if err != nil {
@@ -221,8 +221,8 @@ func (d *ERC721Interactions) TokenMetaInfos(tokenID *big.Int) (*models.TokenMeta
 func (d *ERC721Interactions) Name() (string, error) {
 	name, err := transaction.Call(
 		d.session,
-		d.session.erc271.PackName(),
-		d.session.erc271.UnpackName,
+		d.erc721.PackName(),
+		d.erc721.UnpackName,
 	)
 
 	if err != nil {
@@ -235,8 +235,8 @@ func (d *ERC721Interactions) Name() (string, error) {
 func (d *ERC721Interactions) Symbol() (string, error) {
 	symbol, err := transaction.Call(
 		d.session,
-		d.session.erc271.PackSymbol(),
-		d.session.erc271.UnpackSymbol,
+		d.erc721.PackSymbol(),
+		d.erc721.UnpackSymbol,
 	)
 
 	if err != nil {
@@ -249,8 +249,8 @@ func (d *ERC721Interactions) Symbol() (string, error) {
 func (d *ERC721Interactions) TokenURI(tokenID *big.Int) (string, error) {
 	uri, err := transaction.Call(
 		d.session,
-		d.session.erc271.PackTokenURI(tokenID),
-		d.session.erc271.UnpackTokenURI,
+		d.erc721.PackTokenURI(tokenID),
+		d.erc721.UnpackTokenURI,
 	)
 
 	if err != nil {
@@ -263,8 +263,8 @@ func (d *ERC721Interactions) TokenURI(tokenID *big.Int) (string, error) {
 func (d *ERC721Interactions) GetApproved(tokenID *big.Int) (common.Address, error) {
 	approved, err := transaction.Call(
 		d.session,
-		d.session.erc271.PackGetApproved(tokenID),
-		d.session.erc271.UnpackGetApproved,
+		d.erc721.PackGetApproved(tokenID),
+		d.erc721.UnpackGetApproved,
 	)
 	if err != nil {
 		return common.Address{}, d.callError("nft.GetApproved()", err)

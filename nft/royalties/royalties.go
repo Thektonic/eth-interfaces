@@ -31,7 +31,7 @@ func NewERC721RoyaltiesInteractions(
 
 	err := baseIERC721.CheckSignatures(baseIERC721.GetAddress(), converted)
 	if err != nil {
-		return nil, customerrors.WrapinterfacingError("ierc721Royalties", err)
+		return nil, customerrors.WrapInterfacingError("ierc721Royalties", err)
 	}
 
 	ierc721Royalties := inferences.NewIerc721()
@@ -44,7 +44,10 @@ func NewERC721RoyaltiesInteractions(
 }
 
 // RoyaltiesInfos retrieves the royalty information for a given token and sale price.
-func (e *IERC721RoyaltiesInteractions) RoyaltiesInfos(tokenID *big.Int, salePrice *big.Int) (inferences.RoyaltyInfoOutput, error) {
+func (e *IERC721RoyaltiesInteractions) RoyaltiesInfos(
+	tokenID *big.Int,
+	salePrice *big.Int,
+) (inferences.RoyaltyInfoOutput, error) {
 	rInfos, err := transaction.Call(
 		e.GetSession(),
 		e.ierc721Royalties.PackRoyaltyInfo(tokenID, salePrice),

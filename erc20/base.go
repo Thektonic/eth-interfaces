@@ -34,6 +34,7 @@ func (s *session) Instance() *bind.BoundContract {
 	return s.instance
 }
 
+// Interactions provides methods for interacting with ERC20 token contracts.
 type Interactions struct {
 	*base.Interactions
 	*session
@@ -104,8 +105,8 @@ func (d *Interactions) GetSession() transaction.Session {
 func (d *Interactions) GetBalance() (*big.Int, error) {
 	balance, err := transaction.Call(
 		d.session,
-		d.session.erc20.PackBalanceOf(d.Address),
-		d.session.erc20.UnpackBalanceOf,
+		d.erc20.PackBalanceOf(d.Address),
+		d.erc20.UnpackBalanceOf,
 	)
 	if err != nil {
 		return nil, d.callError("erc20.BalanceOf()", err)
@@ -118,7 +119,7 @@ func (d *Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Tr
 	tx, err := transaction.Transact(
 		d,
 		d.session,
-		d.session.erc20.PackTransfer(to, amount),
+		d.erc20.PackTransfer(to, amount),
 		transaction.DefaultUnpacker,
 	)
 	if err != nil {
@@ -131,8 +132,8 @@ func (d *Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Tr
 func (d *Interactions) Decimals() (uint8, error) {
 	decimals, err := transaction.Call(
 		d.session,
-		d.session.erc20.PackDecimals(),
-		d.session.erc20.UnpackDecimals,
+		d.erc20.PackDecimals(),
+		d.erc20.UnpackDecimals,
 	)
 
 	if err != nil {
@@ -145,8 +146,8 @@ func (d *Interactions) Decimals() (uint8, error) {
 func (d *Interactions) TotalSupply() (*big.Int, error) {
 	supply, err := transaction.Call(
 		d.session,
-		d.session.erc20.PackTotalSupply(),
-		d.session.erc20.UnpackTotalSupply,
+		d.erc20.PackTotalSupply(),
+		d.erc20.UnpackTotalSupply,
 	)
 
 	if err != nil {
@@ -159,8 +160,8 @@ func (d *Interactions) TotalSupply() (*big.Int, error) {
 func (d *Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
 	balance, err := transaction.Call(
 		d.session,
-		d.session.erc20.PackBalanceOf(owner),
-		d.session.erc20.UnpackBalanceOf,
+		d.erc20.PackBalanceOf(owner),
+		d.erc20.UnpackBalanceOf,
 	)
 	if err != nil {
 		return nil, d.callError("erc20.BalanceOf()", err)
@@ -198,8 +199,8 @@ func (d *Interactions) TokenMetaInfos() (*models.TokenMeta, error) {
 func (d *Interactions) Name() (string, error) {
 	name, err := transaction.Call(
 		d.session,
-		d.session.erc20.PackName(),
-		d.session.erc20.UnpackName,
+		d.erc20.PackName(),
+		d.erc20.UnpackName,
 	)
 
 	if err != nil {
@@ -213,8 +214,8 @@ func (d *Interactions) Name() (string, error) {
 func (d *Interactions) Symbol() (string, error) {
 	symbol, err := transaction.Call(
 		d.session,
-		d.session.erc20.PackSymbol(),
-		d.session.erc20.UnpackSymbol,
+		d.erc20.PackSymbol(),
+		d.erc20.UnpackSymbol,
 	)
 
 	if err != nil {
@@ -227,8 +228,8 @@ func (d *Interactions) Symbol() (string, error) {
 func (d *Interactions) Allowance(owner, spender common.Address) (*big.Int, error) {
 	allowance, err := transaction.Call(
 		d.session,
-		d.session.erc20.PackAllowance(owner, spender),
-		d.session.erc20.UnpackAllowance,
+		d.erc20.PackAllowance(owner, spender),
+		d.erc20.UnpackAllowance,
 	)
 
 	if err != nil {

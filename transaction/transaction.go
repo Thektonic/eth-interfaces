@@ -8,9 +8,16 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// TxOptsBuilderFunc defines a function type that returns a transaction options builder.
 type TxOptsBuilderFunc func() (*bind.TransactOpts, error)
 
-func Transact[T any](interaction Interaction, s Session, calldata []byte, unpack func([]byte) (T, error)) (*types.Transaction, error) {
+// Transact is an abstraction for the bind.Transact function, allowing for a more generic transaction interface.
+func Transact[T any](
+	interaction Interaction,
+	s Session,
+	calldata []byte,
+	unpack func([]byte,
+	) (T, error)) (*types.Transaction, error) {
 	if interaction.Safe() {
 		_, err := Call(s, calldata, unpack)
 		if err != nil {
