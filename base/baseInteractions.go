@@ -3,10 +3,8 @@
 package base
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -17,12 +15,10 @@ import (
 	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/transaction"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/simulated"
 )
 
@@ -377,43 +373,4 @@ func (i *Interactions) CheckSignatures(contractAddress common.Address, signature
 		return customerrors.WrapInterfacingError("CheckSignatures", fmt.Errorf("not supported functions: %s", notSupported))
 	}
 	return nil
-}
-
-// ManageCustomContractError handles custom contract errors.
-func (i *Interactions) ManageCustomContractError(abiString string, err error) error {
-	if len(abiString) == 0 {
-		return err
-	}
-	errBytes, success := ethclient.RevertErrorData(err)
-	if success {
-		customErr, err := i.MatchErrors(abiString, errBytes)
-		if err != nil {
-			return customerrors.WrapInterfacingError("MatchErrors", err)
-		}
-		return errors.New(customErr)
-	}
-	return nil
-}
-
-// MatchErrors matches error bytes to custom error names.
-func (i *Interactions) MatchErrors(abiString string, errBytes []byte) (string, error) {
-	abi, err := abi.JSON(strings.NewReader(abiString))
-	if err != nil {
-		return "", err
-	}
-	if len(errBytes) < hex.ErrorMethodIDLength {
-		panic("invalid error data")
-	}
-	methodID := errBytes[:hex.ErrorMethodIDLength]
-
-	// Find matching custom error
-	var errorName string
-	for _, abiError := range abi.Errors {
-		abierr := abiError.ID.Bytes()[:4]
-		if bytes.Equal(abierr[:4], methodID) {
-			errorName = abiError.Name
-			break
-		}
-	}
-	return errorName, nil
 }

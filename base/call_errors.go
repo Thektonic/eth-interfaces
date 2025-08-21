@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 // CallError represents an error that occurred during a contract call
@@ -37,10 +36,9 @@ func (e *CallError) Unwrap() error { return e.Err }
 
 func GenCallError(kind string, buildError func(any) error, UnpackError func(raw []byte) (any, error)) func(field string, err error) error {
 	return func(field string, err error) error {
-		var jsonErr rpc.DataError
-		if errors.As(err, &jsonErr) {
-			fdata := hex.DecodeErrorData(jsonErr.ErrorData())
-			data, err := UnpackError(fdata)
+		errBytes, success := ethclient.RevertErrorData(err)
+		if success {
+			data, err := UnpackError(errBytes)
 			if err != nil {
 				return errors.New("failed to unpack error data")
 			}
