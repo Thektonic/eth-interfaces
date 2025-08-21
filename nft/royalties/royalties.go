@@ -7,22 +7,16 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/customerrors"
 	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/nft"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/Thektonic/eth-interfaces/transaction"
 )
 
 // IERC721RoyaltiesInteractions wraps interactions with the IERC721Royalties contract.
 type IERC721RoyaltiesInteractions struct {
 	*nft.ERC721Interactions
-	ierc721Royalties *ERC721Complete.ERC721CompleteSession
+	ierc721Royalties *inferences.Ierc721
 	callError        func(string, error) *base.CallError
-}
-
-// RoyaltyInfos holds the royalty receiver and amount for a token sale.
-type RoyaltyInfos struct {
-	Receiver      common.Address
-	RoyaltyAmount *big.Int
 }
 
 // NewERC721RoyaltiesInteractions creates a new instance of IERC721RoyaltiesInteractions.
@@ -30,38 +24,38 @@ func NewERC721RoyaltiesInteractions(
 	baseIERC721 *nft.ERC721Interactions,
 	signatures []IERC721RoyaltiesSignature,
 ) (*IERC721RoyaltiesInteractions, error) {
-	ierc721Royalties, err := ERC721Complete.NewERC721Complete(baseIERC721.GetAddress(), baseIERC721.Client)
-	session := ERC721Complete.ERC721CompleteSession{
-		Contract:     ierc721Royalties,
-		CallOpts:     baseIERC721.GetSession().CallOpts,
-		TransactOpts: baseIERC721.GetSession().TransactOpts,
-	}
-	if err != nil {
-		return nil, customerrors.WrapinterfacingError("ierc721Royalties", err)
-	}
-
 	var converted []hex.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
 	}
 
-	err = baseIERC721.CheckSignatures(baseIERC721.GetAddress(), converted)
+	err := baseIERC721.CheckSignatures(baseIERC721.GetAddress(), converted)
 	if err != nil {
-		return nil, customerrors.WrapinterfacingError("ierc721Royalties", err)
+		return nil, customerrors.WrapInterfacingError("ierc721Royalties", err)
 	}
+
+	ierc721Royalties := inferences.NewIerc721()
 
 	callError := func(_ string, err error) *base.CallError {
-		return baseIERC721.WrapCallError(ERC721Complete.ERC721CompleteABI, "nft.RoyaltyInfo()", err)
+		return baseIERC721.WrapCallError(inferences.Ierc721MetaData.ABI, "nft.RoyaltyInfo()", err)
 	}
 
-	return &IERC721RoyaltiesInteractions{baseIERC721, &session, callError}, nil
+	return &IERC721RoyaltiesInteractions{baseIERC721, ierc721Royalties, callError}, nil
 }
 
 // RoyaltiesInfos retrieves the royalty information for a given token and sale price.
-func (e *IERC721RoyaltiesInteractions) RoyaltiesInfos(tokenID *big.Int, salePrice *big.Int) (RoyaltyInfos, error) {
-	rInfos, err := e.ierc721Royalties.RoyaltyInfo(tokenID, salePrice)
+func (e *IERC721RoyaltiesInteractions) RoyaltiesInfos(
+	tokenID *big.Int,
+	salePrice *big.Int,
+) (inferences.RoyaltyInfoOutput, error) {
+	rInfos, err := transaction.Call(
+		e.GetSession(),
+		e.ierc721Royalties.PackRoyaltyInfo(tokenID, salePrice),
+		e.ierc721Royalties.UnpackRoyaltyInfo,
+	)
+
 	if err != nil {
-		return RoyaltyInfos{}, e.callError("nft.RoyaltyInfo()", err)
+		return inferences.RoyaltyInfoOutput{}, e.callError("nft.RoyaltyInfo()", err)
 	}
 	return rInfos, nil
 }

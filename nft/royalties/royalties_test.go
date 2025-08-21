@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/Thektonic/eth-interfaces/base"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/nft/royalties"
 	"github.com/Thektonic/eth-interfaces/testingtools"
@@ -18,8 +18,8 @@ import (
 // Test_RoyaltiesInfos verifies the RoyaltiesInfos method for valid and invalid token IDs using a table-driven approach.
 func Test_RoyaltiesInfos(t *testing.T) {
 	backend, _, contractAddr, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT",
 		"MNFT",
 	)
@@ -30,7 +30,7 @@ func Test_RoyaltiesInfos(t *testing.T) {
 		}
 	}()
 
-	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	nftA, err := nft.NewERC721Interactions(baseInteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})
 	assert.Nil(t, err)
 

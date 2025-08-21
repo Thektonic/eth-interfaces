@@ -11,8 +11,7 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/erc20"
 	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC20Burnable"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,8 +22,8 @@ import (
 // Test_DeploySuccessfully tests if the blockchain setup and contract deployment succeed without errors.
 func Test_DeploySuccessfully(t *testing.T) {
 	backend, _, _, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT", // Arg 1: name
 		"MNFT",  // Arg 2: symbol
 	)
@@ -39,8 +38,8 @@ func Test_DeploySuccessfully(t *testing.T) {
 // using various contracts, including a valid NFT contract, an empty contract, and an ERC20 contract.
 func Test_Instantiation(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT", // Arg 1: name
 		"MNFT",  // Arg 2: symbol
 	)
@@ -61,8 +60,8 @@ func Test_Instantiation(t *testing.T) {
 	erc20Contract, tx, _, err := hex.DeployContract(
 		auth,
 		backend.Client(),
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20burnableMetaData.ABI,
+		inferences.Ierc20burnableMetaData.Bin,
 	)
 	if err != nil {
 		t.Fatalf("failed to deploy ERC20 contract: %s", err)
@@ -99,7 +98,7 @@ func Test_Instantiation(t *testing.T) {
 		},
 	}
 
-	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			_, err := erc20.NewIERC20Interactions(
@@ -128,8 +127,8 @@ func testNFTStringMethod(
 	methodCall func(*nft.ERC721Interactions) (string, error),
 ) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT", // Arg 1: name
 		"MNFT",  // Arg 2: symbol
 	)
@@ -156,7 +155,7 @@ func testNFTStringMethod(
 		},
 	}
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			session, err := nft.NewERC721Interactions(base, tt.ContractAddr, []nft.BaseNFTSignature{signature})
@@ -193,8 +192,8 @@ func Test_Symbol(t *testing.T) {
 // Test_TotalSupply verifies that the total supply of NFTs is correctly reported by the contract.
 func Test_TotalSupply(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT", // Arg 1: name
 		"MNFT",  // Arg 2: symbol
 	)
@@ -221,7 +220,7 @@ func Test_TotalSupply(t *testing.T) {
 		},
 	}
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			session, err := nft.NewERC721Interactions(base, tt.ContractAddr, []nft.BaseNFTSignature{nft.TotalSupply})
@@ -244,8 +243,8 @@ func Test_TotalSupply(t *testing.T) {
 // Test_OwnerOf verifies that the owner of a given token is correctly identified.
 func Test_OwnerOf(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT", // Arg 1: name
 		"MNFT",  // Arg 2: symbol
 	)
@@ -281,7 +280,7 @@ func Test_OwnerOf(t *testing.T) {
 		},
 	}
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			session, err := nft.NewERC721Interactions(base, tt.ContractAddr, []nft.BaseNFTSignature{nft.OwnerOf})
@@ -306,8 +305,8 @@ func Test_OwnerOf(t *testing.T) {
 // Test_Transfer tests the transfer functionality and ensures that the token transfer behaves as expected.
 func Test_Transfer(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT", // Arg 1: name
 		"MNFT",  // Arg 2: symbol
 	)
@@ -362,7 +361,7 @@ func Test_Transfer(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 			if tt.args.pk != nil {
 				pk := tt.args.pk
 				_, err := baseInteractions.TransferETH(crypto.PubkeyToAddress(pk.PublicKey), big.NewInt(1e18))
@@ -371,7 +370,7 @@ func Test_Transfer(t *testing.T) {
 				}
 
 				backend.Commit()
-				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
+				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil, false)
 			}
 			session, err := nft.NewERC721Interactions(
 				baseInteractions, tt.ContractAddr, []nft.BaseNFTSignature{nft.TransferFrom},
@@ -402,8 +401,8 @@ func Test_Transfer(t *testing.T) {
 // Test_GetBalance verifies that the NFT balance is correctly returned for an address.
 func Test_GetBalance(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT",
 		"MNFT",
 	)
@@ -416,7 +415,7 @@ func Test_GetBalance(t *testing.T) {
 		}
 	}()
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	nft, err := nft.NewERC721Interactions(base, *contractAddress, []nft.BaseNFTSignature{nft.BalanceOf}, auth)
 	assert.Nil(t, err)
 
@@ -428,8 +427,8 @@ func Test_GetBalance(t *testing.T) {
 // Test_TransferFirstOwnedTo tests transferring the first owned token to a specified address.
 func Test_TransferFirstOwnedTo(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT",
 		"MNFT",
 	)
@@ -483,7 +482,7 @@ func Test_TransferFirstOwnedTo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var nftInterface *nft.ERC721Interactions
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 			if tt.args.pk != nil {
 				pk := tt.args.pk
 				_, err := baseInteractions.TransferETH(crypto.PubkeyToAddress(pk.PublicKey), big.NewInt(1e18))
@@ -491,12 +490,12 @@ func Test_TransferFirstOwnedTo(t *testing.T) {
 					t.Fatal(err)
 				}
 				backend.Commit()
-				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
+				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil, false)
 				if err != nil {
 					t.Fatal(err)
 				}
 			} else {
-				baseInteractions = base.NewBaseInteractions(backend.Client(), privKey, nil)
+				baseInteractions = base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 			}
 			nftInterface, err = nft.NewERC721Interactions(
 				baseInteractions,
@@ -521,8 +520,8 @@ func Test_TransferFirstOwnedTo(t *testing.T) {
 // Test_BalanceOf verifies the BalanceOf function for different addresses.
 func Test_BalanceOf(t *testing.T) {
 	backend, auth, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT",
 		"MNFT",
 	)
@@ -535,7 +534,7 @@ func Test_BalanceOf(t *testing.T) {
 		}
 	}()
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	nft, err := nft.NewERC721Interactions(base, *contractAddress, []nft.BaseNFTSignature{nft.BalanceOf})
 	assert.Nil(t, err)
 
@@ -587,8 +586,8 @@ func Test_BalanceOf(t *testing.T) {
 // Test_Approve tests the approval functionality for token transfers.
 func Test_Approve(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT",
 		"MNFT",
 	)
@@ -638,7 +637,7 @@ func Test_Approve(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 			if tt.args.pk != nil {
 				pk := tt.args.pk
 				_, err := baseInteractions.TransferETH(crypto.PubkeyToAddress(pk.PublicKey), big.NewInt(1e18))
@@ -646,7 +645,7 @@ func Test_Approve(t *testing.T) {
 					t.Fatal(err)
 				}
 				backend.Commit()
-				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
+				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil, false)
 			}
 
 			nft, err := nft.NewERC721Interactions(
@@ -675,8 +674,8 @@ func Test_Approve(t *testing.T) {
 // Test_TokenMetaInfos verifies that the metadata (name, symbol, and URI) for a token is correctly retrieved.
 func Test_TokenMetaInfos(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT",
 		"MNFT",
 	)
@@ -689,7 +688,7 @@ func Test_TokenMetaInfos(t *testing.T) {
 		}
 	}()
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	nft, err := erc20.NewIERC20Interactions(
 		base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol, erc20.TokenURI},
 	)

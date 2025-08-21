@@ -7,15 +7,16 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/customerrors"
 	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/nft"
+	"github.com/Thektonic/eth-interfaces/transaction"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // ERC721EnumerableInteractions wraps interactions with an ERC721Enumerable contract, extending basic NFT interactions.
 type ERC721EnumerableInteractions struct {
 	*nft.ERC721Interactions
-	ierc721Enumerable *ERC721Complete.ERC721CompleteSession
+	ierc721Enumerable *inferences.Ierc721
 	callError         func(string, error) *base.CallError
 }
 
@@ -25,31 +26,22 @@ func NewERC721EnumerableInteractions(
 	baseIERC721 *nft.ERC721Interactions,
 	signatures []IERC721EnumerableSignature,
 ) (*ERC721EnumerableInteractions, error) {
-	ierc721Enumerable, err := ERC721Complete.NewERC721Complete(baseIERC721.GetAddress(), baseIERC721.Client)
-	if err != nil {
-		return nil, customerrors.WrapinterfacingError("erc721Enumerable", err)
-	}
-	session := ERC721Complete.ERC721CompleteSession{
-		Contract:     ierc721Enumerable,
-		CallOpts:     baseIERC721.GetSession().CallOpts,
-		TransactOpts: baseIERC721.GetSession().TransactOpts,
-	}
-
 	var converted []hex.Signature
 	for _, sig := range signatures {
 		converted = append(converted, sig)
 	}
+	err := baseIERC721.CheckSignatures(baseIERC721.GetAddress(), converted)
+	if err != nil {
+		return nil, customerrors.WrapInterfacingError("erc721Enumerable", err)
+	}
+
+	ierc721Enumerable := inferences.NewIerc721()
 
 	callError := func(field string, err error) *base.CallError {
-		return baseIERC721.WrapCallError(ERC721Complete.ERC721CompleteABI, field, err)
+		return baseIERC721.WrapCallError(inferences.Ierc721MetaData.ABI, field, err)
 	}
 
-	err = baseIERC721.CheckSignatures(baseIERC721.GetAddress(), converted)
-	if err != nil {
-		return nil, customerrors.WrapinterfacingError("erc721Enumerable", err)
-	}
-
-	return &ERC721EnumerableInteractions{baseIERC721, &session, callError}, nil
+	return &ERC721EnumerableInteractions{baseIERC721, ierc721Enumerable, callError}, nil
 }
 
 // GetAddressOwnedTokens returns a slice of token IDs owned by the specified address.
@@ -88,7 +80,12 @@ func (e *ERC721EnumerableInteractions) GetAllTokenIDs() ([]*big.Int, error) {
 
 // TokenOfOwnerByIndex returns the token ID belonging to a specified address at a given index.
 func (e *ERC721EnumerableInteractions) TokenOfOwnerByIndex(to common.Address, index *big.Int) (*big.Int, error) {
-	tokenID, err := e.ierc721Enumerable.TokenOfOwnerByIndex(to, index)
+	tokenID, err := transaction.Call(
+		e.GetSession(),
+		e.ierc721Enumerable.PackTokenOfOwnerByIndex(to, index),
+		e.ierc721Enumerable.UnpackTokenOfOwnerByIndex,
+	)
+
 	if err != nil {
 		return nil, e.callError("nft.TokenOfOwnerByIndex()", err)
 	}
@@ -97,7 +94,12 @@ func (e *ERC721EnumerableInteractions) TokenOfOwnerByIndex(to common.Address, in
 
 // TokenByIndex returns the token ID at a specific index in the contract.
 func (e *ERC721EnumerableInteractions) TokenByIndex(index *big.Int) (*big.Int, error) {
-	tokenID, err := e.ierc721Enumerable.TokenByIndex(index)
+	tokenID, err := transaction.Call(
+		e.GetSession(),
+		e.ierc721Enumerable.PackTokenByIndex(index),
+		e.ierc721Enumerable.UnpackTokenByIndex,
+	)
+
 	if err != nil {
 		return nil, e.callError("nft.TokenByIndex()", err)
 	}

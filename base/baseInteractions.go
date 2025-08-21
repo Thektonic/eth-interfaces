@@ -14,8 +14,8 @@ import (
 
 	"github.com/Thektonic/eth-interfaces/customerrors"
 	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/Thektonic/eth-interfaces/inferences/IERC165"
-	Disperse "github.com/Thektonic/eth-interfaces/inferences/disperse"
+	"github.com/Thektonic/eth-interfaces/inferences"
+	"github.com/Thektonic/eth-interfaces/transaction"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -28,13 +28,35 @@ import (
 
 // Interactions holds the context, client, sender address, private key, disperse contract, and explorer URL.
 type Interactions struct {
-	Ctx         context.Context
-	Client      simulated.Client
-	Address     common.Address
-	pk          *ecdsa.PrivateKey
-	maxGasPrice *big.Int
-	disperse    *Disperse.Disperse
-	explorer    *string
+	Ctx      context.Context
+	Client   simulated.Client
+	Address  common.Address
+	pk       *ecdsa.PrivateKey
+	disperse *inferences.Disperse
+	explorer *string
+	TxOptsFn transaction.TxOptsBuilderFunc
+	safe     bool
+}
+
+// Session holds call options and bound contract instance for contract interactions
+type Session struct {
+	callOpts *bind.CallOpts
+	instance *bind.BoundContract
+}
+
+// CallOpts returns the call options for contract calls
+func (s *Session) CallOpts() *bind.CallOpts {
+	return s.callOpts
+}
+
+// Instance returns the bound contract instance
+func (s *Session) Instance() *bind.BoundContract {
+	return s.instance
+}
+
+// Safe returns whether the interactions are in safe mode
+func (i *Interactions) Safe() bool {
+	return i.safe
 }
 
 // IBaseInteractions defines the interface for verifying transactions.
@@ -47,7 +69,8 @@ func NewBaseInteractions(
 	client simulated.Client,
 	pk *ecdsa.PrivateKey,
 	explorer *string,
-	maxGasPrice ...*big.Int,
+	safe bool,
+	txOptsFn ...transaction.TxOptsBuilderFunc,
 ) *Interactions {
 	ctx := context.TODO()
 	_, err := client.BlockNumber(ctx)
@@ -61,104 +84,98 @@ func NewBaseInteractions(
 		log.Fatal("error casting public key to ECDSA")
 	}
 
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	return &Interactions{
-		ctx,
-		client,
-		fromAddress,
-		pk,
-		func() *big.Int {
-			if len(maxGasPrice) > 0 {
-				return maxGasPrice[0]
-			}
-			return nil
-		}(),
-		nil,
-		explorer,
+	var txOptFn transaction.TxOptsBuilderFunc
+
+	if len(txOptsFn) != 0 {
+		txOptFn = txOptsFn[0]
 	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	return &Interactions{ctx, client, fromAddress, pk, nil, explorer, txOptFn, safe}
 }
 
 // SetDisperse initializes the disperse contract for multi-address fund transfers.
-func (b *Interactions) SetDisperse(address string) error {
+func (i *Interactions) SetDisperse(_ string) error {
 	var err error
-	b.disperse, err = Disperse.NewDisperse(common.HexToAddress(address), b.Client)
+	i.disperse = inferences.NewDisperse()
 	return err
 }
 
 // BaseTxSetup sets up transaction options (nonce, gas price, chain ID, etc.) for sending a transaction.
-func (b *Interactions) BaseTxSetup() (*bind.TransactOpts, error) {
-	gasPrice, err := b.Client.SuggestGasPrice(b.Ctx)
+func (i *Interactions) BaseTxSetup() (*bind.TransactOpts, error) {
+	if i.TxOptsFn != nil {
+		return i.TxOptsFn()
+	}
+
+	gasPrice, err := i.Client.SuggestGasPrice(i.Ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to suggest gas price: %v", err)
 	}
-	nonce, err := b.Client.PendingNonceAt(b.Ctx, b.Address)
+	nonce, err := i.Client.PendingNonceAt(i.Ctx, i.Address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user nonce: %v", err)
 	}
 
-	chainID, err := b.Client.ChainID(b.Ctx)
+	chainID, err := i.Client.ChainID(i.Ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chain ID: %v", err)
 	}
 
-	opts, err := bind.NewKeyedTransactorWithChainID(b.pk, chainID)
+	opts, err := bind.NewKeyedTransactorWithChainID(i.pk, chainID)
 	if err != nil {
 		return nil, err
 	}
 
-	if b.maxGasPrice != nil && b.maxGasPrice.Cmp(gasPrice) < 0 {
-		gasPrice = b.maxGasPrice
-	}
+	opts.From = i.Address
 	opts.GasPrice = gasPrice
 
-	opts.From = b.Address
+	opts.From = i.Address
 	opts.Nonce = new(big.Int).SetUint64(nonce)
 
 	return opts, nil
 }
 
 // BaseCallSetup returns the call options for read-only contract operations.
-func (b *Interactions) BaseCallSetup() *bind.CallOpts {
+func (i *Interactions) BaseCallSetup() *bind.CallOpts {
 	return &bind.CallOpts{
-		From:    b.Address,
+		From:    i.Address,
 		Pending: false,
 	}
 }
 
 // CatchTx waits for a transaction to be mined and returns its hash or an error message.
-func (b *Interactions) CatchTx(tx *ethTypes.Transaction, err error) (string, error) {
+func (i *Interactions) CatchTx(tx *ethTypes.Transaction, err error) (string, error) {
 	if err != nil {
 		return FailedTx(err)
 	}
-	receipt, err := bind.WaitMined(context.Background(), b.Client, tx)
+	receipt, err := bind.WaitMined(context.Background(), i.Client, tx)
 	if receipt == nil {
 		return FailedTx(err)
 	}
-	if b.explorer != nil {
-		return SuccessTx(fmt.Sprintf(*b.explorer, "/tx/", receipt.TxHash.Hex()))
+	if i.explorer != nil {
+		return SuccessTx(fmt.Sprintf(*i.explorer, "/tx/", receipt.TxHash.Hex()))
 	}
 	return SuccessTx(receipt.TxHash.Hex())
 }
 
 // VerifyTransaction simulates a contract call to verify transaction validity.
-func (b *Interactions) VerifyTransaction(ctx context.Context, to common.Address, data []byte, value int64) error {
+func (i *Interactions) VerifyTransaction(ctx context.Context, to common.Address, data []byte, value int64) error {
 	callMsg := ethereum.CallMsg{
-		From:  b.Address,
+		From:  i.Address,
 		To:    &to,
 		Data:  data,
 		Value: big.NewInt(value),
 	}
 
-	_, err := b.Client.CallContract(ctx, callMsg, nil)
+	_, err := i.Client.CallContract(ctx, callMsg, nil)
 	return err
 }
 
 // Disperse uses the disperse contract to send funds to multiple addresses.
-func (b *Interactions) Disperse(addresses []common.Address, totalValue uint) (string, error) {
-	if b.disperse == nil {
+func (i *Interactions) Disperse(addresses []common.Address, totalValue uint) (string, error) {
+	if i.disperse == nil {
 		return FailedTx(fmt.Errorf("disperse contract not initialized"))
 	}
-	opts, err := b.BaseTxSetup()
+	opts, err := i.BaseTxSetup()
 	if err != nil {
 		return FailedTx(err)
 	}
@@ -166,36 +183,57 @@ func (b *Interactions) Disperse(addresses []common.Address, totalValue uint) (st
 	for range addresses {
 		amounts = append(amounts, new(big.Int).SetUint64(uint64(totalValue)/uint64(len(addresses))))
 	}
+
 	opts.Value = new(big.Int).SetUint64(uint64(totalValue))
+
+	originalTxOptsFn := i.TxOptsFn
+	i.TxOptsFn = func() (*bind.TransactOpts, error) {
+		return opts, nil
+	}
+	defer func() { i.TxOptsFn = originalTxOptsFn }()
+
 	fmt.Println("Dispersing...")
-	tx, err := b.disperse.DisperseEther(opts, addresses, amounts)
-	return b.CatchTx(tx, err)
+
+	instance := i.disperse.Instance(i.Client, i.Address)
+
+	tx, err := transaction.Transact(
+		i,
+		&Session{callOpts: i.BaseCallSetup(), instance: instance},
+		i.disperse.PackDisperseEther(addresses, amounts),
+		transaction.DefaultUnpacker,
+	)
+
+	if err != nil {
+		return FailedTx(err)
+	}
+
+	return i.CatchTx(tx, err)
 }
 
 // SendAllFunds transfers the entire balance to a designated address after fee estimation.
-func (b *Interactions) SendAllFunds(to common.Address) (*ethTypes.Transaction, error) {
-	bn, err := b.Client.BlockNumber(b.Ctx)
+func (i *Interactions) SendAllFunds(to common.Address) (*ethTypes.Transaction, error) {
+	bn, err := i.Client.BlockNumber(i.Ctx)
 	if err != nil {
 		return nil, err
 	}
-	balance, err := b.Client.BalanceAt(b.Ctx, b.Address, new(big.Int).SetUint64(bn))
+	balance, err := i.Client.BalanceAt(i.Ctx, i.Address, new(big.Int).SetUint64(bn))
 	if err != nil {
 		return nil, err
 	}
 
 	msg := ethereum.CallMsg{
-		From:  b.Address,
+		From:  i.Address,
 		To:    &to,
 		Value: balance,
 		Data:  nil,
 	}
 
-	gasLimit, err := b.Client.EstimateGas(b.Ctx, msg)
+	gasLimit, err := i.Client.EstimateGas(i.Ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	gasPrice, err := b.Client.SuggestGasPrice(context.Background())
+	gasPrice, err := i.Client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +242,7 @@ func (b *Interactions) SendAllFunds(to common.Address) (*ethTypes.Transaction, e
 	gasCost.Mul(gasCost, gasPrice)
 	value := big.NewInt(0).Add(balance, gasCost)
 	if value.Int64() < balance.Int64() {
-		return b.TransferETH(to, value)
+		return i.TransferETH(to, value)
 	}
 	return nil, fmt.Errorf(
 		"fees exceed balances\nfees : %f ETH\nbalance : %f ETH",
@@ -214,20 +252,20 @@ func (b *Interactions) SendAllFunds(to common.Address) (*ethTypes.Transaction, e
 }
 
 // TransferETH transfers Ether to the specified address, ensuring sufficient balance and proper fee estimation.
-func (b *Interactions) TransferETH(to common.Address, value *big.Int) (*ethTypes.Transaction, error) {
-	balance, err := b.Client.BalanceAt(b.Ctx, to, nil)
+func (i *Interactions) TransferETH(to common.Address, value *big.Int) (*ethTypes.Transaction, error) {
+	balance, err := i.Client.BalanceAt(i.Ctx, to, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	msg := ethereum.CallMsg{From: b.Address, To: &to, Value: balance, Data: nil}
+	msg := ethereum.CallMsg{From: i.Address, To: &to, Value: balance, Data: nil}
 
-	gasLimit, err := b.Client.EstimateGas(b.Ctx, msg)
+	gasLimit, err := i.Client.EstimateGas(i.Ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	gasPrice, err := b.Client.SuggestGasPrice(context.Background())
+	gasPrice, err := i.Client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +281,7 @@ func (b *Interactions) TransferETH(to common.Address, value *big.Int) (*ethTypes
 		)
 	}
 
-	nonce, err := b.Client.PendingNonceAt(context.Background(), b.Address)
+	nonce, err := i.Client.PendingNonceAt(context.Background(), i.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -257,19 +295,19 @@ func (b *Interactions) TransferETH(to common.Address, value *big.Int) (*ethTypes
 		GasPrice: gasPrice,
 	})
 	// Get the chain ID
-	chainID, err := b.Client.ChainID(b.Ctx)
+	chainID, err := i.Client.ChainID(i.Ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// Sign the transaction
-	signedTx, err := ethTypes.SignTx(tx, ethTypes.NewEIP155Signer(chainID), b.pk)
+	signedTx, err := ethTypes.SignTx(tx, ethTypes.NewEIP155Signer(chainID), i.pk)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign the tx: %w", err)
 	}
 
 	// Broadcast the transaction
-	err = b.Client.SendTransaction(context.Background(), signedTx)
+	err = i.Client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send the tx: %w", err)
 	}
@@ -277,21 +315,10 @@ func (b *Interactions) TransferETH(to common.Address, value *big.Int) (*ethTypes
 	return signedTx, nil
 }
 
-// SupportsInterface checks if a contract supports a specific interface.
-func (b *Interactions) SupportsInterface(address common.Address, signature [4]byte) (bool, error) {
-	ierc165, err := IERC165.NewIERC165(address, b.Client)
-	if err != nil {
-		return false, err
-	}
-
-	callopts := b.BaseCallSetup()
-	return ierc165.SupportsInterface(callopts, signature)
-}
-
 // CheckSignatures checks if a contract supports specific function signatures.
-func (b *Interactions) CheckSignatures(contractAddress common.Address, signatures []hex.Signature) error {
+func (i *Interactions) CheckSignatures(contractAddress common.Address, signatures []hex.Signature) error {
 	// Get proxy bytecode
-	byteCode, err := b.Client.CodeAt(b.Ctx, contractAddress, nil)
+	byteCode, err := i.Client.CodeAt(i.Ctx, contractAddress, nil)
 	if err != nil {
 		return fmt.Errorf("failed to get contract bytecode: %w", err)
 	}
@@ -312,16 +339,16 @@ func (b *Interactions) CheckSignatures(contractAddress common.Address, signature
 	}
 
 	// Check implementation contract if any signatures not found
-	implAddress, err := hex.GetImplementationAddress(b.Ctx, b.Client, contractAddress)
+	implAddress, err := hex.GetImplementationAddress(i.Ctx, i.Client, contractAddress)
 	if err != nil {
-		return customerrors.WrapinterfacingError("CheckSignatures", err)
+		return customerrors.WrapInterfacingError("CheckSignatures", err)
 	}
 
 	notSupported := ""
 
 	// If implementation found, check remaining sigs against it
 	if implAddress != (common.Address{}) {
-		implCode, err := b.Client.CodeAt(b.Ctx, implAddress, nil)
+		implCode, err := i.Client.CodeAt(i.Ctx, implAddress, nil)
 		if err != nil {
 			// If can't get implementation code, mark all remaining as not supported
 			for _, sig := range notFoundSigs {
@@ -339,7 +366,7 @@ func (b *Interactions) CheckSignatures(contractAddress common.Address, signature
 	} else {
 		// Check diamond facets for remaining signatures
 		for _, sig := range notFoundSigs {
-			supported, err := hex.CheckDiamondFunction(b.Ctx, b.Client, contractAddress, sig.GetSelector())
+			supported, err := hex.CheckDiamondFunction(i.Ctx, i.Client, contractAddress, sig.GetSelector())
 			if err != nil || !supported {
 				notSupported += fmt.Sprintf("%s: %s\n", sig, sig.GetHex()[:8])
 			}
@@ -347,21 +374,21 @@ func (b *Interactions) CheckSignatures(contractAddress common.Address, signature
 	}
 
 	if len(notSupported) > 0 {
-		return customerrors.WrapinterfacingError("CheckSignatures", fmt.Errorf("not supported functions: %s", notSupported))
+		return customerrors.WrapInterfacingError("CheckSignatures", fmt.Errorf("not supported functions: %s", notSupported))
 	}
 	return nil
 }
 
 // ManageCustomContractError handles custom contract errors.
-func (b *Interactions) ManageCustomContractError(abiString string, err error) error {
+func (i *Interactions) ManageCustomContractError(abiString string, err error) error {
 	if len(abiString) == 0 {
 		return err
 	}
 	errBytes, success := ethclient.RevertErrorData(err)
 	if success {
-		customErr, err := b.MatchErrors(abiString, errBytes)
+		customErr, err := i.MatchErrors(abiString, errBytes)
 		if err != nil {
-			return customerrors.WrapinterfacingError("MatchErrors", err)
+			return customerrors.WrapInterfacingError("MatchErrors", err)
 		}
 		return errors.New(customErr)
 	}
@@ -369,7 +396,7 @@ func (b *Interactions) ManageCustomContractError(abiString string, err error) er
 }
 
 // MatchErrors matches error bytes to custom error names.
-func (b *Interactions) MatchErrors(abiString string, errBytes []byte) (string, error) {
+func (i *Interactions) MatchErrors(abiString string, errBytes []byte) (string, error) {
 	abi, err := abi.JSON(strings.NewReader(abiString))
 	if err != nil {
 		return "", err

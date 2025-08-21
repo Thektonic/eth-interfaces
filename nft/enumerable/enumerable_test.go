@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Thektonic/eth-interfaces/base"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/nft/enumerable"
 	"github.com/Thektonic/eth-interfaces/testingtools"
@@ -17,8 +17,8 @@ import (
 // that the number of tokens matches the balance.
 func Test_GetAddressOwnedTokens(t *testing.T) {
 	backend, auth, contractAddr, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT",
 		"MNFT",
 	)
@@ -29,7 +29,7 @@ func Test_GetAddressOwnedTokens(t *testing.T) {
 		}
 	}()
 
-	baseinteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	baseinteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	nftA, err := nft.NewERC721Interactions(baseinteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})
 	assert.Nil(t, err)
 
@@ -51,8 +51,8 @@ func Test_GetAddressOwnedTokens(t *testing.T) {
 // equals the number of tokens returned.
 func Test_GetAllTokenIDs(t *testing.T) {
 	backend, _, contractAddr, privKey, err := testingtools.SetupBlockchain(t,
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT",
 		"MNFT",
 	)
@@ -65,7 +65,7 @@ func Test_GetAllTokenIDs(t *testing.T) {
 		}
 	}()
 
-	baseinteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	baseinteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	nftA, err := nft.NewERC721Interactions(baseinteractions, *contractAddr, []nft.BaseNFTSignature{nft.BalanceOf})
 	if err != nil {
 		t.Fatal(err.Error())

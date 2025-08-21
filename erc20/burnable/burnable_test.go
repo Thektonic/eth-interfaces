@@ -10,7 +10,7 @@ import (
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/erc20"
 	"github.com/Thektonic/eth-interfaces/erc20/burnable"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC20Burnable"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -21,8 +21,8 @@ import (
 // using various contracts, including a valid ERC20 contract, an empty contract, and an NFT contract.
 func Test_Instantiation(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20burnableMetaData.ABI,
+		inferences.Ierc20burnableMetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +47,7 @@ func Test_Instantiation(t *testing.T) {
 		},
 	}
 
-	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			erc20Interactions, err := erc20.NewIERC20Interactions(
@@ -79,8 +79,8 @@ func Test_Instantiation(t *testing.T) {
 // Test_Burn tests the burn functionality and ensures that the token burn behaves as expected.
 func Test_Burn(t *testing.T) {
 	backend, _, contractAddress, privKey, err := testingtools.SetupBlockchain(t,
-		ERC20Burnable.ERC20BurnableABI,
-		ERC20Burnable.ERC20BurnableBin,
+		inferences.Ierc20burnableMetaData.ABI,
+		inferences.Ierc20burnableMetaData.Bin,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -122,7 +122,7 @@ func Test_Burn(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 			if tt.args.pk != nil {
 				pk := tt.args.pk
 				_, err := baseInteractions.TransferETH(crypto.PubkeyToAddress(pk.PublicKey), big.NewInt(1e18))
@@ -131,7 +131,7 @@ func Test_Burn(t *testing.T) {
 				}
 
 				backend.Commit()
-				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
+				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil, false)
 			}
 			session, err := erc20.NewIERC20Interactions(
 				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Name, erc20.BalanceOf},

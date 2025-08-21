@@ -13,8 +13,8 @@ func (e *InterfacingError) Error() string {
 	return fmt.Sprintf("interface setup error function %s, error : %s", e.InterfaceName, e.Err.Error())
 }
 
-// WrapinterfacingError wraps an error with interface context information
-func WrapinterfacingError(interfaceName string, err error) *InterfacingError {
+// WrapInterfacingError wraps an error with interface context information
+func WrapInterfacingError(interfaceName string, err error) *InterfacingError {
 	if err == nil {
 		return nil
 	}
@@ -25,5 +25,5 @@ func WrapinterfacingError(interfaceName string, err error) *InterfacingError {
 	}
 }
 
-// UnWrap returns the underlying error
-func (e *InterfacingError) UnWrap() error { return e.Err }
+// Unwrap returns the underlying error
+func (e *InterfacingError) Unwrap() error { return e.Err }

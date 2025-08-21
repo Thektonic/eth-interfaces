@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/Thektonic/eth-interfaces/hex"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/models"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/nft/enumerable"
@@ -75,7 +76,7 @@ func NewERC721SummedInteractions(
 // total supply, and royalty information.
 func (s *IERC721SummedInteractions) AllInfos(
 	tokenIDs ...*big.Int,
-) (*models.TokenMeta, *big.Int, *royalties.RoyaltyInfos, error) {
+) (*models.TokenMeta, *big.Int, *inferences.RoyaltyInfoOutput, error) {
 	var tokenID *big.Int
 	if len(tokenIDs) == 0 {
 		tokenID = common.Big0

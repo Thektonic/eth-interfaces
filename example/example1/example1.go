@@ -37,7 +37,7 @@ func Example1() {
 	defer client.Close()
 
 	// Create a new base interaction object
-	baseInteractions := base.NewBaseInteractions(client, privateKey, nil)
+	baseInteractions := base.NewBaseInteractions(client, privateKey, nil, false)
 
 	// Create a new ERC721 interaction object from the base interaction
 	nftInteractions, err := nft.NewERC721Interactions(
