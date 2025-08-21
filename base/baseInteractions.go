@@ -128,7 +128,7 @@ func (i *Interactions) BaseTxSetup() (*bind.TransactOpts, error) {
 	opts.From = i.Address
 	opts.GasPrice = gasPrice
 
-	opts.From = b.Address
+	opts.From = i.Address
 	opts.Nonce = new(big.Int).SetUint64(nonce)
 
 	return opts, nil
