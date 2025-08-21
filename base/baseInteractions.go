@@ -184,13 +184,13 @@ func (i *Interactions) Disperse(addresses []common.Address, totalValue uint) (st
 		amounts = append(amounts, new(big.Int).SetUint64(uint64(totalValue)/uint64(len(addresses))))
 	}
 
-	tmpValue := *opts.Value
-
 	opts.Value = new(big.Int).SetUint64(uint64(totalValue))
 
+	originalTxOptsFn := i.TxOptsFn
 	i.TxOptsFn = func() (*bind.TransactOpts, error) {
 		return opts, nil
 	}
+	defer func() { i.TxOptsFn = originalTxOptsFn }()
 
 	fmt.Println("Dispersing...")
 
@@ -199,14 +199,13 @@ func (i *Interactions) Disperse(addresses []common.Address, totalValue uint) (st
 	tx, err := transaction.Transact(
 		i,
 		&Session{callOpts: i.BaseCallSetup(), instance: instance},
-		i.disperse.PackDisperseEther(addresses, amounts), transaction.DefaultUnpacker,
+		i.disperse.PackDisperseEther(addresses, amounts),
+		transaction.DefaultUnpacker,
 	)
 
 	if err != nil {
 		return FailedTx(err)
 	}
-
-	opts.Value = &tmpValue
 
 	return i.CatchTx(tx, err)
 }
