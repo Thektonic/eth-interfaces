@@ -2,7 +2,6 @@
 package burnable
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/Thektonic/eth-interfaces/base"
@@ -11,7 +10,6 @@ import (
 	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/transaction"
-	bind2 "github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -49,19 +47,12 @@ func NewIERC20Burnable(
 
 // Burn destroys the specified token from the owner's balance.
 func (e *IERC20BurnableInteractions) Burn(qty *big.Int) (*types.Transaction, error) {
-	if e.Safe() {
-		_, err := transaction.Call(e, e.erc20Burnable.PackBurn(qty), transaction.DefaultUnpacker)
-		if err != nil {
-			fmt.Println(err.Error())
-			return nil, e.callError("erc20.Approve()", err)
-		}
-	}
-
-	txOpts, err := e.BaseTxSetup()
-	if err != nil {
-		return nil, e.callError("BaseTxSetup()", err)
-	}
-	tx, err := bind2.Transact(e.Instance(), txOpts, e.erc20Burnable.PackBurn(qty))
+	tx, err := transaction.Transact(
+		e,
+		e,
+		e.erc20Burnable.PackBurn(qty),
+		transaction.DefaultUnpacker,
+	)
 	if err != nil {
 		return nil, e.callError("erc20.Burn()", err)
 	}
@@ -71,19 +62,12 @@ func (e *IERC20BurnableInteractions) Burn(qty *big.Int) (*types.Transaction, err
 
 // BurnFrom is a wrapper for Burn that calls the token's burnFrom function instead.
 func (e *IERC20BurnableInteractions) BurnFrom(from common.Address, qty *big.Int) (*types.Transaction, error) {
-	if e.Safe() {
-		_, err := transaction.Call(e.Interactions, e.erc20Burnable.PackBurnFrom(from, qty), transaction.DefaultUnpacker)
-		if err != nil {
-			fmt.Println(err.Error())
-			return nil, e.callError("erc20.Approve()", err)
-		}
-	}
-
-	txOpts, err := e.BaseTxSetup()
-	if err != nil {
-		return nil, e.callError("BaseTxSetup()", err)
-	}
-	tx, err := bind2.Transact(e.Instance(), txOpts, e.erc20Burnable.PackBurnFrom(from, qty))
+	tx, err := transaction.Transact(
+		e,
+		e,
+		e.erc20Burnable.PackBurnFrom(from, qty),
+		transaction.DefaultUnpacker,
+	)
 	if err != nil {
 		return nil, e.callError("erc20.BurnFrom()", err)
 	}
