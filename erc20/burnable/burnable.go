@@ -2,6 +2,7 @@
 package burnable
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/Thektonic/eth-interfaces/base"
@@ -18,7 +19,7 @@ import (
 type IERC20BurnableInteractions struct {
 	*erc20.Interactions
 	erc20Burnable *inferences.Ierc20burnable
-	callError     func(string, error) *base.CallError
+	callError     func(string, error) error
 }
 
 // NewIERC20Burnable creates a new enumerable interaction instance using the provided base NFT interactions.
@@ -38,9 +39,7 @@ func NewIERC20Burnable(
 
 	erc20Burnable := inferences.NewIerc20burnable()
 
-	callError := func(field string, err error) *base.CallError {
-		return baseIERC20.WrapCallError(inferences.Ierc20burnableMetaData.ABI, field, err)
-	}
+	callError := base.GenCallError("erc20Burnable", ParseError, erc20Burnable.UnpackError)
 
 	return &IERC20BurnableInteractions{baseIERC20, erc20Burnable, callError}, nil
 }
@@ -54,7 +53,7 @@ func (e *IERC20BurnableInteractions) Burn(qty *big.Int) (*types.Transaction, err
 		transaction.DefaultUnpacker,
 	)
 	if err != nil {
-		return nil, e.callError("erc20.Burn()", err)
+		return nil, e.callError("Burn()", err)
 	}
 
 	return tx, nil
@@ -69,8 +68,27 @@ func (e *IERC20BurnableInteractions) BurnFrom(from common.Address, qty *big.Int)
 		transaction.DefaultUnpacker,
 	)
 	if err != nil {
-		return nil, e.callError("erc20.BurnFrom()", err)
+		return nil, e.callError("BurnFrom()", err)
 	}
 
 	return tx, nil
+}
+
+func ParseError(rawErr any) error {
+	switch e := rawErr.(type) {
+	case *inferences.Ierc20burnableERC20InsufficientAllowance:
+		return fmt.Errorf("ERC20InsufficientAllowance: %s,allowance %s, required: %s", e.Spender.Hex(), e.Allowance.String(), e.Needed.String())
+	case *inferences.Ierc20burnableERC20InvalidSpender:
+		return fmt.Errorf("ERC20InvalidSpender: %s", e.Spender.Hex())
+	case *inferences.Ierc20burnableERC20InsufficientBalance:
+		return fmt.Errorf("ERC20InsufficientBalance: %s, required: %s", e.Balance.String(), e.Needed.String())
+	case *inferences.Ierc20burnableERC20InvalidSender:
+		return fmt.Errorf("ERC20InvalidSender: %s", e.Sender.Hex())
+	case *inferences.Ierc20burnableERC20InvalidReceiver:
+		return fmt.Errorf("ERC20InvalidReceiver: %s", e.Receiver.Hex())
+	case *inferences.Ierc20burnableERC20InvalidApprover:
+		return fmt.Errorf("ERC20InvalidApprover: %s", e.Approver.Hex())
+	default:
+		return nil
+	}
 }

@@ -17,7 +17,7 @@ import (
 type ERC721EnumerableInteractions struct {
 	*nft.ERC721Interactions
 	ierc721Enumerable *inferences.Ierc721
-	callError         func(string, error) *base.CallError
+	callError         func(string, error) error
 }
 
 // NewERC721EnumerableInteractions creates a new enumerable interaction instance
@@ -37,9 +37,7 @@ func NewERC721EnumerableInteractions(
 
 	ierc721Enumerable := inferences.NewIerc721()
 
-	callError := func(field string, err error) *base.CallError {
-		return baseIERC721.WrapCallError(inferences.Ierc721MetaData.ABI, field, err)
-	}
+	callError := base.GenCallError("erc721Enumerable", nft.ParseError, ierc721Enumerable.UnpackError)
 
 	return &ERC721EnumerableInteractions{baseIERC721, ierc721Enumerable, callError}, nil
 }

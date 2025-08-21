@@ -95,3 +95,17 @@ func CheckDiamondFunction(
 
 	return common.BytesToAddress(result) != (common.Address{}), nil
 }
+
+func DecodeErrorData(data interface{}) []byte {
+	switch v := data.(type) {
+	case string:
+		// Remove "0x" prefix if present
+		if len(v) >= 2 && v[:2] == "0x" {
+			return common.Hex2Bytes(v[2:])
+		}
+		return common.Hex2Bytes(v)
+	case []byte:
+		return v
+	}
+	return nil
+}

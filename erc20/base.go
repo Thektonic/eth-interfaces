@@ -39,7 +39,7 @@ type Interactions struct {
 	*base.Interactions
 	*session
 	erc20Address common.Address
-	callError    func(string, error) *base.CallError
+	callError    func(string, error) error
 }
 
 // NewIERC20Interactions creates a new instance of IERC20AInteractions from a base interaction
@@ -68,9 +68,7 @@ func NewIERC20Interactions(
 		instance: ierc20.Instance(baseInteractions.Client, address),
 	}
 
-	callError := func(field string, err error) *base.CallError {
-		return (baseInteractions.WrapCallError(inferences.Ierc20MetaData.ABI, field, err))
-	}
+	callError := base.GenCallError("erc20", ParseError, ierc20.UnpackError)
 
 	ierc20Asession := &Interactions{
 		baseInteractions,
@@ -109,7 +107,7 @@ func (d *Interactions) GetBalance() (*big.Int, error) {
 		d.erc20.UnpackBalanceOf,
 	)
 	if err != nil {
-		return nil, d.callError("erc20.BalanceOf()", err)
+		return nil, d.callError("BalanceOf()", err)
 	}
 	return balance, nil
 }
@@ -123,7 +121,7 @@ func (d *Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Tr
 		transaction.DefaultUnpacker,
 	)
 	if err != nil {
-		return nil, d.callError("erc20.Transfer()", err)
+		return nil, d.callError("Transfer()", err)
 	}
 	return tx, nil
 }
@@ -137,7 +135,7 @@ func (d *Interactions) Decimals() (uint8, error) {
 	)
 
 	if err != nil {
-		return 0, d.callError("erc20.Decimals()", err)
+		return 0, d.callError("Decimals()", err)
 	}
 	return decimals, nil
 }
@@ -151,7 +149,7 @@ func (d *Interactions) TotalSupply() (*big.Int, error) {
 	)
 
 	if err != nil {
-		return nil, d.callError("erc20.TotalSupply()", err)
+		return nil, d.callError("TotalSupply()", err)
 	}
 	return supply, nil
 }
@@ -164,7 +162,7 @@ func (d *Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
 		d.erc20.UnpackBalanceOf,
 	)
 	if err != nil {
-		return nil, d.callError("erc20.BalanceOf()", err)
+		return nil, d.callError("BalanceOf()", err)
 	}
 	return balance, nil
 }
@@ -174,10 +172,11 @@ func (d *Interactions) Approve(to common.Address, allowance *big.Int) (*types.Tr
 	tx, err := transaction.Transact(
 		d,
 		d.session,
-		d.erc20.PackApprove(to, allowance), transaction.DefaultUnpacker,
+		d.erc20.PackApprove(to, allowance),
+		transaction.DefaultUnpacker,
 	)
 	if err != nil {
-		return nil, d.callError("erc20.Approve()", err)
+		return nil, d.callError("Approve()", err)
 	}
 	return tx, nil
 }
@@ -204,7 +203,7 @@ func (d *Interactions) Name() (string, error) {
 	)
 
 	if err != nil {
-		return "", d.callError("erc20.Name()", err)
+		return "", d.callError("Name()", err)
 	}
 
 	return name, nil
@@ -219,7 +218,7 @@ func (d *Interactions) Symbol() (string, error) {
 	)
 
 	if err != nil {
-		return "", d.callError("erc20.Symbol()", err)
+		return "", d.callError("Symbol()", err)
 	}
 	return symbol, nil
 }
@@ -233,8 +232,27 @@ func (d *Interactions) Allowance(owner, spender common.Address) (*big.Int, error
 	)
 
 	if err != nil {
-		return nil, d.callError("erc20.Allowance()", err)
+		return nil, d.callError("Allowance()", err)
 	}
 
 	return allowance, nil
+}
+
+func ParseError(rawErr any) error {
+	switch e := rawErr.(type) {
+	case *inferences.Ierc20ERC20InsufficientAllowance:
+		return fmt.Errorf("ERC20InsufficientAllowance: %s,allowance %s, required: %s", e.Spender.Hex(), e.Allowance.String(), e.Needed.String())
+	case *inferences.Ierc20ERC20InvalidSpender:
+		return fmt.Errorf("ERC20InvalidSpender: %s", e.Spender.Hex())
+	case *inferences.Ierc20ERC20InsufficientBalance:
+		return fmt.Errorf("ERC20InsufficientBalance: %s, required: %s", e.Balance.String(), e.Needed.String())
+	case *inferences.Ierc20ERC20InvalidSender:
+		return fmt.Errorf("ERC20InvalidSender: %s", e.Sender.Hex())
+	case *inferences.Ierc20ERC20InvalidReceiver:
+		return fmt.Errorf("ERC20InvalidReceiver: %s", e.Receiver.Hex())
+	case *inferences.Ierc20ERC20InvalidApprover:
+		return fmt.Errorf("ERC20InvalidApprover: %s", e.Approver.Hex())
+	default:
+		return nil
+	}
 }

@@ -327,7 +327,7 @@ func Test_Transfer(t *testing.T) {
 			},
 			ContractAddr:  *contractAddress,
 			ExpectError:   true,
-			ExpectedError: "call error on erc20.Transfer(): ERC20InvalidReceiver",
+			ExpectedError: "erc20.Transfer(): ERC20InvalidReceiver",
 		},
 		{
 			Name: "KO - Unsufficient balance",
@@ -341,7 +341,7 @@ func Test_Transfer(t *testing.T) {
 			},
 			ContractAddr:  *contractAddress,
 			ExpectError:   true,
-			ExpectedError: "call error on erc20.Transfer(): ERC20InsufficientBalance",
+			ExpectedError: "erc20.Transfer(): ERC20InsufficientBalance",
 		},
 	}
 
@@ -503,13 +503,13 @@ func Test_Approve(t *testing.T) {
 				qty: big.NewInt(10),
 			},
 			expectError:   true,
-			errorContains: "call error on erc20.Approve(): ERC20InvalidSpender",
+			errorContains: "erc20.Approve(): ERC20InvalidSpender",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, true)
 
 			token, err := erc20.NewIERC20Interactions(
 				baseInteractions, *contractAddress, []erc20.BaseERC20Signature{erc20.Approve},

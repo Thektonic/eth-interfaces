@@ -85,13 +85,13 @@ func Test_Instantiation(t *testing.T) {
 			ContractAddr:   *contractAddress,
 		},
 		{
-			Name:          "KO - Empty contract doesn't implement interface",
+			Name:          "NOK - Empty contract doesn't implement interface",
 			ExpectError:   true,
 			ContractAddr:  *emptyContract,
 			ExpectedError: "interface setup error function CheckSignatures, error :",
 		},
 		{
-			Name:          "KO - ERC20 doesn't implement the interface",
+			Name:          "NOK - ERC20 doesn't implement the interface",
 			ExpectError:   true,
 			ContractAddr:  erc20Contract,
 			ExpectedError: "interface setup error function CheckSignatures, error :",
@@ -276,7 +276,7 @@ func Test_OwnerOf(t *testing.T) {
 			argument:      big.NewInt(31),
 			ContractAddr:  *contractAddress,
 			ExpectError:   true,
-			ExpectedError: "call error on nft.OwnerOf(): OwnerQueryForNonexistentToken",
+			ExpectedError: "erc721.OwnerOf(): OwnerQueryForNonexistentToken",
 		},
 	}
 
@@ -344,7 +344,7 @@ func Test_Transfer(t *testing.T) {
 			ContractAddr: *contractAddress,
 		},
 		{
-			Name: "KO - Incorrect owner/Unallowed",
+			Name: "NOK - Incorrect owner/Unallowed",
 			args: transferArgs{
 				pk: func() *ecdsa.PrivateKey {
 					key, _ := crypto.GenerateKey()
@@ -355,7 +355,7 @@ func Test_Transfer(t *testing.T) {
 			},
 			ContractAddr:  *contractAddress,
 			ExpectError:   true,
-			ExpectedError: "call error on nft.TransferFrom(): TransferFromIncorrectOwner",
+			ExpectedError: "erc721.TransferFrom(): TransferFromIncorrectOwner",
 		},
 	}
 
@@ -550,7 +550,7 @@ func Test_BalanceOf(t *testing.T) {
 			Owner:          common.Address{},
 			ExpectedResult: nil,
 			ExpectError:    true,
-			ExpectedError:  "call error on nft.BalanceOf(): BalanceQueryForZeroAddress",
+			ExpectedError:  "erc721.BalanceOf(): BalanceQueryForZeroAddress",
 		},
 		{
 			Name:           "OK - non empty balance",
@@ -631,7 +631,7 @@ func Test_Approve(t *testing.T) {
 				TokenID: big.NewInt(10),
 			},
 			expectError:   true,
-			errorContains: "call error on nft.Approve(): ApprovalCallerNotOwnerNorApproved",
+			errorContains: "erc721.Approve(): ApprovalCallerNotOwnerNorApproved",
 		},
 	}
 
