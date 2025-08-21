@@ -238,10 +238,16 @@ func (d *Interactions) Allowance(owner, spender common.Address) (*big.Int, error
 	return allowance, nil
 }
 
+// ParseError parses raw contract errors into human-readable error messages for ERC20 operations.
 func ParseError(rawErr any) error {
 	switch e := rawErr.(type) {
 	case *inferences.Ierc20ERC20InsufficientAllowance:
-		return fmt.Errorf("ERC20InsufficientAllowance: %s,allowance %s, required: %s", e.Spender.Hex(), e.Allowance.String(), e.Needed.String())
+		return fmt.Errorf(
+			"ERC20InsufficientAllowance: %s, allowance %s, required: %s",
+			e.Spender.Hex(),
+			e.Allowance.String(),
+			e.Needed.String(),
+		)
 	case *inferences.Ierc20ERC20InvalidSpender:
 		return fmt.Errorf("ERC20InvalidSpender: %s", e.Spender.Hex())
 	case *inferences.Ierc20ERC20InsufficientBalance:

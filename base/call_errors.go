@@ -34,16 +34,20 @@ func WrapCallError(kind, field string, err error) *CallError {
 // Unwrap returns the underlying error
 func (e *CallError) Unwrap() error { return e.Err }
 
-func GenCallError(kind string, buildError func(any) error, UnpackError func(raw []byte) (any, error)) func(field string, err error) error {
+// GenCallError generates a call error handler that wraps contract call errors with additional context.
+func GenCallError(
+	kind string,
+	buildError func(any) error,
+	unpackError func(raw []byte) (any, error),
+) func(field string, err error) error {
 	return func(field string, err error) error {
 		errBytes, success := ethclient.RevertErrorData(err)
 		if success {
-			data, err := UnpackError(errBytes)
+			data, err := unpackError(errBytes)
 			if err != nil {
 				return errors.New("failed to unpack error data")
 			}
 			return WrapCallError(kind, field, buildError(data))
-
 		}
 		return err
 	}

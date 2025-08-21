@@ -271,6 +271,7 @@ func (d *ERC721Interactions) GetApproved(tokenID *big.Int) (common.Address, erro
 	return approved, nil
 }
 
+// ParseError parses raw contract errors into human-readable error messages for NFT/ERC721 operations.
 func ParseError(rawErr any) error {
 	switch e := rawErr.(type) {
 	case *inferences.Ierc721ERC721OutOfBoundsIndex:

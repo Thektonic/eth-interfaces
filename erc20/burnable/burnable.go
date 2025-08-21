@@ -74,10 +74,16 @@ func (e *IERC20BurnableInteractions) BurnFrom(from common.Address, qty *big.Int)
 	return tx, nil
 }
 
+// ParseError parses raw contract errors into human-readable error messages for burnable ERC20 operations.
 func ParseError(rawErr any) error {
 	switch e := rawErr.(type) {
 	case *inferences.Ierc20burnableERC20InsufficientAllowance:
-		return fmt.Errorf("ERC20InsufficientAllowance: %s,allowance %s, required: %s", e.Spender.Hex(), e.Allowance.String(), e.Needed.String())
+		return fmt.Errorf(
+			"ERC20InsufficientAllowance: %s, allowance %s, required: %s",
+			e.Spender.Hex(),
+			e.Allowance.String(),
+			e.Needed.String(),
+		)
 	case *inferences.Ierc20burnableERC20InvalidSpender:
 		return fmt.Errorf("ERC20InvalidSpender: %s", e.Spender.Hex())
 	case *inferences.Ierc20burnableERC20InsufficientBalance:

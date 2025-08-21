@@ -96,6 +96,7 @@ func CheckDiamondFunction(
 	return common.BytesToAddress(result) != (common.Address{}), nil
 }
 
+// DecodeErrorData decodes hex-encoded error data from various input formats.
 func DecodeErrorData(data interface{}) []byte {
 	switch v := data.(type) {
 	case string:
