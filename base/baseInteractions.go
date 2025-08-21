@@ -14,8 +14,7 @@ import (
 
 	"github.com/Thektonic/eth-interfaces/customerrors"
 	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/Thektonic/eth-interfaces/inferences/IERC165"
-	Disperse "github.com/Thektonic/eth-interfaces/inferences/disperse"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/transaction"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -33,9 +32,26 @@ type Interactions struct {
 	Client   simulated.Client
 	Address  common.Address
 	pk       *ecdsa.PrivateKey
-	disperse *Disperse.Disperse
+	disperse *inferences.Disperse
 	explorer *string
-	txOpts   transaction.TxOptsBuilderFunc
+	TxOptsFn transaction.TxOptsBuilderFunc
+	safe     bool
+}
+
+type Session struct {
+	callOpts *bind.CallOpts
+	instance *bind.BoundContract
+}
+
+func (s *Session) CallOpts() *bind.CallOpts {
+	return s.callOpts
+}
+func (s *Session) Instance() *bind.BoundContract {
+	return s.instance
+}
+
+func (d *Interactions) Safe() bool {
+	return d.safe
 }
 
 // IBaseInteractions defines the interface for verifying transactions.
@@ -48,6 +64,7 @@ func NewBaseInteractions(
 	client simulated.Client,
 	pk *ecdsa.PrivateKey,
 	explorer *string,
+	safe bool,
 	txOptsFn ...transaction.TxOptsBuilderFunc,
 ) *Interactions {
 	ctx := context.TODO()
@@ -68,20 +85,20 @@ func NewBaseInteractions(
 		txOptFn = txOptsFn[0]
 	}
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	return &Interactions{ctx, client, fromAddress, pk, nil, explorer, txOptFn}
+	return &Interactions{ctx, client, fromAddress, pk, nil, explorer, txOptFn, safe}
 }
 
 // SetDisperse initializes the disperse contract for multi-address fund transfers.
 func (b *Interactions) SetDisperse(address string) error {
 	var err error
-	b.disperse, err = Disperse.NewDisperse(common.HexToAddress(address), b.Client)
+	b.disperse = inferences.NewDisperse()
 	return err
 }
 
 // BaseTxSetup sets up transaction options (nonce, gas price, chain ID, etc.) for sending a transaction.
 func (b *Interactions) BaseTxSetup() (*bind.TransactOpts, error) {
-	if b.txOpts != nil {
-		return b.txOpts()
+	if b.TxOptsFn != nil {
+		return b.TxOptsFn()
 	}
 
 	gasPrice, err := b.Client.SuggestGasPrice(b.Ctx)
@@ -163,9 +180,31 @@ func (b *Interactions) Disperse(addresses []common.Address, totalValue uint) (st
 	for range addresses {
 		amounts = append(amounts, new(big.Int).SetUint64(uint64(totalValue)/uint64(len(addresses))))
 	}
+
+	tmpValue := *opts.Value
+
 	opts.Value = new(big.Int).SetUint64(uint64(totalValue))
+
+	b.TxOptsFn = func() (*bind.TransactOpts, error) {
+		return opts, nil
+	}
+
 	fmt.Println("Dispersing...")
-	tx, err := b.disperse.DisperseEther(opts, addresses, amounts)
+
+	instance := b.disperse.Instance(b.Client, b.Address)
+
+	tx, err := transaction.Transact(
+		b,
+		&Session{callOpts: b.BaseCallSetup(), instance: instance},
+		b.disperse.PackDisperseEther(addresses, amounts), transaction.DefaultUnpacker,
+	)
+
+	if err != nil {
+		return FailedTx(err)
+	}
+
+	opts.Value = &tmpValue
+
 	return b.CatchTx(tx, err)
 }
 
@@ -272,17 +311,6 @@ func (b *Interactions) TransferETH(to common.Address, value *big.Int) (*ethTypes
 	}
 
 	return signedTx, nil
-}
-
-// SupportsInterface checks if a contract supports a specific interface.
-func (b *Interactions) SupportsInterface(address common.Address, signature [4]byte) (bool, error) {
-	ierc165, err := IERC165.NewIERC165(address, b.Client)
-	if err != nil {
-		return false, err
-	}
-
-	callopts := b.BaseCallSetup()
-	return ierc165.SupportsInterface(callopts, signature)
 }
 
 // CheckSignatures checks if a contract supports specific function signatures.

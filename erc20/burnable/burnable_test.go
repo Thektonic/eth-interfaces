@@ -47,11 +47,11 @@ func Test_Instantiation(t *testing.T) {
 		},
 	}
 
-	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			erc20Interactions, err := erc20.NewIERC20Interactions(
-				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals}, false,
+				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals},
 			)
 			if err != nil {
 				t.Fatalf("failed to create interactions interface, error: %s", err.Error())
@@ -122,7 +122,7 @@ func Test_Burn(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 			if tt.args.pk != nil {
 				pk := tt.args.pk
 				_, err := baseInteractions.TransferETH(crypto.PubkeyToAddress(pk.PublicKey), big.NewInt(1e18))
@@ -131,10 +131,10 @@ func Test_Burn(t *testing.T) {
 				}
 
 				backend.Commit()
-				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
+				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil, false)
 			}
 			session, err := erc20.NewIERC20Interactions(
-				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Name, erc20.BalanceOf}, false,
+				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Name, erc20.BalanceOf},
 			)
 			if err != nil {
 				t.Fatal("setting up should not fail")

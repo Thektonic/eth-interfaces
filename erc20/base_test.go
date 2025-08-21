@@ -12,7 +12,6 @@ import (
 	"github.com/Thektonic/eth-interfaces/erc20"
 	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
 	"github.com/Thektonic/eth-interfaces/testingtools"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -57,8 +56,8 @@ func Test_Instantiation(t *testing.T) {
 	erc721CompleteContract, tx, _, err := hex.DeployContract(
 		auth,
 		backend.Client(),
-		ERC721Complete.ERC721CompleteABI,
-		ERC721Complete.ERC721CompleteBin,
+		inferences.Ierc721MetaData.ABI,
+		inferences.Ierc721MetaData.Bin,
 		"MyNFT", // Arg 1: name
 		"MNFT",  // Arg 2: symbol
 	)
@@ -98,7 +97,7 @@ func Test_Instantiation(t *testing.T) {
 		},
 	}
 
-	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
 			_, err := erc20.NewIERC20Interactions(
@@ -109,7 +108,6 @@ func Test_Instantiation(t *testing.T) {
 					erc20.Symbol,
 					erc20.Decimals,
 				},
-				false,
 			)
 			if tt.ExpectError {
 				if err == nil {
@@ -158,10 +156,10 @@ func testERC20StringMethod(
 		},
 	}
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{signature}, false)
+			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{signature})
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")
@@ -221,10 +219,10 @@ func Test_TotalSupply(t *testing.T) {
 		},
 	}
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TotalSupply}, false)
+			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TotalSupply})
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")
@@ -270,10 +268,10 @@ func Test_Decimals(t *testing.T) {
 		},
 	}
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals}, false)
+			session, err := erc20.NewIERC20Interactions(base, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.Decimals})
 			if tt.ExpectError {
 				if err == nil {
 					t.Error("expected error but there's none")
@@ -349,7 +347,7 @@ func Test_Transfer(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 			if tt.args.pk != nil {
 				pk := tt.args.pk
 				_, err := baseInteractions.TransferETH(crypto.PubkeyToAddress(pk.PublicKey), big.NewInt(1e18))
@@ -358,10 +356,10 @@ func Test_Transfer(t *testing.T) {
 				}
 
 				backend.Commit()
-				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil)
+				baseInteractions = base.NewBaseInteractions(backend.Client(), pk, nil, false)
 			}
 			session, err := erc20.NewIERC20Interactions(
-				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TransferFrom}, false,
+				baseInteractions, tt.ContractAddr, []erc20.BaseERC20Signature{erc20.TransferFrom},
 			)
 			if err != nil {
 				t.Fatal("setting up should not fail")
@@ -401,8 +399,8 @@ func Test_GetBalance(t *testing.T) {
 		}
 	}()
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
-	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf}, false, auth)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
+	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf}, auth)
 	assert.Nil(t, err)
 
 	balance, err := token.GetBalance()
@@ -425,8 +423,8 @@ func Test_BalanceOf(t *testing.T) {
 		}
 	}()
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
-	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf}, false)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
+	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf})
 	assert.Nil(t, err)
 
 	testCases := []struct {
@@ -511,10 +509,10 @@ func Test_Approve(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 
 			token, err := erc20.NewIERC20Interactions(
-				baseInteractions, *contractAddress, []erc20.BaseERC20Signature{erc20.Approve}, false,
+				baseInteractions, *contractAddress, []erc20.BaseERC20Signature{erc20.Approve},
 			)
 			if err != nil {
 				t.Fatal(err)
@@ -551,8 +549,8 @@ func Test_TokenMetaInfos(t *testing.T) {
 		}
 	}()
 
-	base := base.NewBaseInteractions(backend.Client(), privKey, nil)
-	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol}, false)
+	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
+	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.Name, erc20.Symbol})
 	assert.Nil(t, err)
 
 	// Test meta infos for token

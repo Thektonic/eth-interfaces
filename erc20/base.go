@@ -11,7 +11,6 @@ import (
 	"github.com/Thektonic/eth-interfaces/models"
 	"github.com/Thektonic/eth-interfaces/transaction"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	bind2 "github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -40,11 +39,6 @@ type Interactions struct {
 	*session
 	erc20Address common.Address
 	callError    func(string, error) *base.CallError
-	safe         bool
-}
-
-func (d *Interactions) Safe() bool {
-	return d.safe
 }
 
 // NewIERC20Interactions creates a new instance of IERC20AInteractions from a base interaction
@@ -53,7 +47,6 @@ func NewIERC20Interactions(
 	baseInteractions *base.Interactions,
 	address common.Address,
 	signatures []BaseERC20Signature,
-	safe bool,
 	transactOps ...*bind.TransactOpts,
 ) (*Interactions, error) {
 	var converted []hex.Signature
@@ -83,7 +76,15 @@ func NewIERC20Interactions(
 		ierc20Session,
 		address,
 		callError,
-		safe,
+	}
+
+	if len(transactOps) > 0 {
+		if transactOps[0] == nil {
+			return nil, fmt.Errorf("transactOpts cannot be nil")
+		}
+		ierc20Asession.TxOptsFn = func() (*bind.TransactOpts, error) {
+			return transactOps[0], nil
+		}
 	}
 
 	return ierc20Asession, nil
@@ -95,8 +96,8 @@ func (d *Interactions) GetAddress() common.Address {
 }
 
 // GetSession returns the current session used for NFT interactions.
-func (d *Interactions) GetSession() inferences.Ierc20 {
-	return *d.session.erc20
+func (d *Interactions) GetSession() transaction.Session {
+	return d.session
 }
 
 // GetBalance retrieves the balance of NFTs for the associated address.
@@ -114,19 +115,12 @@ func (d *Interactions) GetBalance() (*big.Int, error) {
 
 // TransferTo transfers a specific token to another address after verifying ownership.
 func (d *Interactions) TransferTo(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	if d.safe {
-		_, err := transaction.Call(d.session, d.session.erc20.PackTransfer(to, amount), transaction.DefaultUnpacker)
-		if err != nil {
-			fmt.Println(err.Error())
-			return nil, d.callError("erc20.Transfer()", err)
-		}
-	}
-
-	txOpts, err := d.Interactions.BaseTxSetup()
-	if err != nil {
-		return nil, d.callError("BaseTxSetup()", err)
-	}
-	tx, err := bind2.Transact(d.session.instance, txOpts, d.session.erc20.PackTransfer(to, amount))
+	tx, err := transaction.Transact(
+		d,
+		d.session,
+		d.session.erc20.PackTransfer(to, amount),
+		transaction.DefaultUnpacker,
+	)
 	if err != nil {
 		return nil, d.callError("erc20.Transfer()", err)
 	}
@@ -175,20 +169,12 @@ func (d *Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
 }
 
 // Approve approves an address to transfer a specific token.
-func (d *Interactions) Approve(to common.Address, tokenID *big.Int) (*types.Transaction, error) {
-	if d.safe {
-		_, err := transaction.Call(d.session, d.session.erc20.PackApprove(to, tokenID), transaction.DefaultUnpacker)
-		if err != nil {
-			fmt.Println(err.Error())
-			return nil, d.callError("erc20.Approve()", err)
-		}
-	}
-
-	txOpts, err := d.Interactions.BaseTxSetup()
-	if err != nil {
-		return nil, d.callError("BaseTxSetup()", err)
-	}
-	tx, err := bind2.Transact(d.session.instance, txOpts, d.session.erc20.PackApprove(to, tokenID))
+func (d *Interactions) Approve(to common.Address, allowance *big.Int) (*types.Transaction, error) {
+	tx, err := transaction.Transact(
+		d,
+		d.session,
+		d.erc20.PackApprove(to, allowance), transaction.DefaultUnpacker,
+	)
 	if err != nil {
 		return nil, d.callError("erc20.Approve()", err)
 	}

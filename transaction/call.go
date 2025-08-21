@@ -10,6 +10,11 @@ type Session interface {
 	Instance() *bind.BoundContract
 }
 
+type Interaction interface {
+	BaseTxSetup() (*bind.TransactOpts, error)
+	Safe() bool
+}
+
 func Call[T any](s Session, calldata []byte, unpack func([]byte) (T, error)) (T, error) {
 	return bind2.Call(s.Instance(), s.CallOpts(), calldata, unpack)
 }

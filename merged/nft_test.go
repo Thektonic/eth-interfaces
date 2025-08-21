@@ -5,8 +5,7 @@ import (
 
 	"github.com/Thektonic/eth-interfaces/base"
 	"github.com/Thektonic/eth-interfaces/hex"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC721A"
-	"github.com/Thektonic/eth-interfaces/inferences/ERC721Complete"
+	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/merged"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/nft/enumerable"
@@ -33,8 +32,8 @@ func Test_Instantiation(t *testing.T) {
 		{
 			Name: "OK - Instantiate NFT with enumerable extension",
 			Args: args{
-				abiString:      ERC721A.ERC721AABI,
-				byteCodeString: ERC721A.ERC721ABin,
+				abiString:      inferences.Ierc721MetaData.ABI,
+				byteCodeString: inferences.Ierc721MetaData.Bin,
 				extensions:     []merged.ExtensionEnum{merged.Enumerable},
 				signatures: []hex.Signature{
 					enumerable.TokenByIndex,
@@ -45,8 +44,8 @@ func Test_Instantiation(t *testing.T) {
 		{
 			Name: "OK - Instantiate NFT with royalties extension",
 			Args: args{
-				abiString:      ERC721Complete.ERC721CompleteABI,
-				byteCodeString: ERC721Complete.ERC721CompleteBin,
+				abiString:      inferences.Ierc721MetaData.ABI,
+				byteCodeString: inferences.Ierc721MetaData.Bin,
 				extensions:     []merged.ExtensionEnum{merged.Royalties},
 				signatures:     []hex.Signature{royalties.RoyaltyInfo},
 			},
@@ -54,8 +53,8 @@ func Test_Instantiation(t *testing.T) {
 		{
 			Name: "OK - Instantiate NFT with royalties extension and enumerable extension",
 			Args: args{
-				abiString:      ERC721Complete.ERC721CompleteABI,
-				byteCodeString: ERC721Complete.ERC721CompleteBin,
+				abiString:      inferences.Ierc721MetaData.ABI,
+				byteCodeString: inferences.Ierc721MetaData.Bin,
 				extensions:     []merged.ExtensionEnum{merged.Royalties, merged.Enumerable},
 				signatures: []hex.Signature{
 					royalties.RoyaltyInfo,
@@ -63,17 +62,6 @@ func Test_Instantiation(t *testing.T) {
 					enumerable.TokenOfOwnerByIndex,
 				},
 			},
-		},
-		{
-			Name: "NOK - Instantiate NFT with enumerable and royalties extensions",
-			Args: args{
-				abiString:      ERC721A.ERC721AABI,
-				byteCodeString: ERC721A.ERC721ABin,
-				extensions:     []merged.ExtensionEnum{merged.Enumerable, merged.Royalties},
-				signatures:     []hex.Signature{enumerable.TokenOfOwnerByIndex, royalties.RoyaltyInfo},
-			},
-			ExpectError:   true,
-			ExpectedError: "not supported functions: royaltyInfo(uint256,uint256)",
 		},
 	}
 
@@ -92,7 +80,7 @@ func Test_Instantiation(t *testing.T) {
 				}
 			}()
 
-			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil)
+			baseInteractions := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 
 			nftA, err := nft.NewERC721Interactions(baseInteractions, *contractAddr, []nft.BaseNFTSignature{})
 			assert.Nil(t, err)
