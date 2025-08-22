@@ -1,8 +1,6 @@
 package transaction
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	bind2 "github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -21,7 +19,6 @@ func Transact[T any](
 	if interaction.Safe() {
 		_, err := Call(s, calldata, unpack)
 		if err != nil {
-			fmt.Println(err.Error())
 			return nil, err
 		}
 	}

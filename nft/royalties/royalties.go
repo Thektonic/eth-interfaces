@@ -16,7 +16,7 @@ import (
 type IERC721RoyaltiesInteractions struct {
 	*nft.ERC721Interactions
 	ierc721Royalties *inferences.Ierc721
-	callError        func(string, error) *base.CallError
+	callError        func(string, error) error
 }
 
 // NewERC721RoyaltiesInteractions creates a new instance of IERC721RoyaltiesInteractions.
@@ -36,9 +36,7 @@ func NewERC721RoyaltiesInteractions(
 
 	ierc721Royalties := inferences.NewIerc721()
 
-	callError := func(_ string, err error) *base.CallError {
-		return baseIERC721.WrapCallError(inferences.Ierc721MetaData.ABI, "nft.RoyaltyInfo()", err)
-	}
+	callError := base.GenCallError("ierc721Royalties", nft.ParseError, ierc721Royalties.UnpackError)
 
 	return &IERC721RoyaltiesInteractions{baseIERC721, ierc721Royalties, callError}, nil
 }

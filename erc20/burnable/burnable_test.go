@@ -116,7 +116,7 @@ func Test_Burn(t *testing.T) {
 			},
 			ContractAddr:  *contractAddress,
 			ExpectError:   true,
-			ExpectedError: "call error on erc20.Burn(): ERC20InsufficientBalance",
+			ExpectedError: "erc20Burnable.Burn(): ERC20InsufficientBalance",
 		},
 	}
 

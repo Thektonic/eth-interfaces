@@ -7,6 +7,7 @@ pragma solidity ^0.8.9;
 import "contracts/IERC721A.sol";
 import "contracts/IERC721Enumerable.sol";
 import "contracts/IERC721Royalties.sol";
+import "contracts/IERC721Errors.sol";
 
 /**
  * @dev Interface of ERC721 token receiver.
@@ -20,8 +21,12 @@ interface ERC721A__IERC721Receiver {
     ) external returns (bytes4);
 }
 
-
-contract ERC721Complete is IERC721A, IERC721Enumerable, IERC2981 {
+contract ERC721Complete is
+    IERC721A,
+    IERC721Enumerable,
+    IERC2981,
+    IERC721Errors
+{
     // Bypass for a `--via-ir` bug (https://github.com/chiru-labs/ERC721A/pull/364).
     struct TokenApprovalRef {
         address value;

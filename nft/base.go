@@ -36,7 +36,7 @@ type ERC721Interactions struct {
 	*base.Interactions
 	*session
 	nftAddress common.Address
-	callError  func(string, error) *base.CallError
+	callError  func(string, error) error
 }
 
 // NewERC721Interactions creates a new instance of ERC721Interactions from a base interaction
@@ -56,19 +56,18 @@ func NewERC721Interactions(
 		return nil, customerrors.WrapInterfacingError("CheckSignatures", err)
 	}
 
-	erc721Complete := inferences.NewIerc721()
+	erc721 := inferences.NewIerc721()
 
 	erc721ASession := session{
-		erc721:   erc721Complete,
+		erc721:   erc721,
 		callOpts: &bind.CallOpts{Pending: true, From: baseInteractions.Address},
-		instance: erc721Complete.Instance(baseInteractions.Client, address),
+		instance: erc721.Instance(baseInteractions.Client, address),
 	}
 
-	callError := func(field string, err error) *base.CallError {
-		return baseInteractions.WrapCallError(inferences.Ierc721MetaData.ABI, field, err)
-	}
+	callError := base.GenCallError("erc721", ParseError, erc721.UnpackError)
 
-	erc721Interactions := &ERC721Interactions{baseInteractions,
+	erc721Interactions := &ERC721Interactions{
+		baseInteractions,
 		&erc721ASession,
 		address,
 		callError,
@@ -104,7 +103,7 @@ func (d *ERC721Interactions) GetBalance() (*big.Int, error) {
 		d.erc721.UnpackBalanceOf,
 	)
 	if err != nil {
-		return nil, d.callError("nft.BalanceOf()", err)
+		return nil, d.callError("BalanceOf()", err)
 	}
 	return balance, nil
 }
@@ -118,7 +117,7 @@ func (d *ERC721Interactions) TransferTo(to common.Address, tokenID *big.Int) (*t
 		transaction.DefaultUnpacker,
 	)
 	if err != nil {
-		return nil, d.callError("nft.TransferFrom()", err)
+		return nil, d.callError("TransferFrom()", err)
 	}
 	return tx, nil
 }
@@ -153,7 +152,7 @@ func (d *ERC721Interactions) TotalSupply() (*big.Int, error) {
 		d.erc721.UnpackTotalSupply,
 	)
 	if err != nil {
-		return nil, d.callError("nft.TotalSupply()", err)
+		return nil, d.callError("TotalSupply()", err)
 	}
 	return supply, nil
 }
@@ -166,7 +165,7 @@ func (d *ERC721Interactions) BalanceOf(owner common.Address) (*big.Int, error) {
 		d.erc721.UnpackBalanceOf,
 	)
 	if err != nil {
-		return nil, d.callError("nft.BalanceOf()", err)
+		return nil, d.callError("BalanceOf()", err)
 	}
 	return balance, nil
 }
@@ -179,7 +178,7 @@ func (d *ERC721Interactions) OwnerOf(tokenID *big.Int) (common.Address, error) {
 		d.erc721.UnpackOwnerOf,
 	)
 	if err != nil {
-		return common.Address{}, d.callError("nft.OwnerOf()", err)
+		return common.Address{}, d.callError("OwnerOf()", err)
 	}
 	return owner, nil
 }
@@ -193,7 +192,7 @@ func (d *ERC721Interactions) Approve(to common.Address, tokenID *big.Int) (*type
 		transaction.DefaultUnpacker,
 	)
 	if err != nil {
-		return nil, d.callError("nft.Approve()", err)
+		return nil, d.callError("Approve()", err)
 	}
 	return tx, nil
 }
@@ -226,7 +225,7 @@ func (d *ERC721Interactions) Name() (string, error) {
 	)
 
 	if err != nil {
-		return "", d.callError("nft.Name()", err)
+		return "", d.callError("Name()", err)
 	}
 	return name, nil
 }
@@ -240,7 +239,7 @@ func (d *ERC721Interactions) Symbol() (string, error) {
 	)
 
 	if err != nil {
-		return "", d.callError("nft.Symbol()", err)
+		return "", d.callError("Symbol()", err)
 	}
 	return symbol, nil
 }
@@ -254,7 +253,7 @@ func (d *ERC721Interactions) TokenURI(tokenID *big.Int) (string, error) {
 	)
 
 	if err != nil {
-		return "", d.callError("nft.TokenURI()", err)
+		return "", d.callError("TokenURI()", err)
 	}
 	return uri, nil
 }
@@ -267,7 +266,57 @@ func (d *ERC721Interactions) GetApproved(tokenID *big.Int) (common.Address, erro
 		d.erc721.UnpackGetApproved,
 	)
 	if err != nil {
-		return common.Address{}, d.callError("nft.GetApproved()", err)
+		return common.Address{}, d.callError("GetApproved()", err)
 	}
 	return approved, nil
+}
+
+// ParseError parses raw contract errors into human-readable error messages for NFT/ERC721 operations.
+func ParseError(rawErr any) error {
+	switch e := rawErr.(type) {
+	case *inferences.Ierc721ERC721OutOfBoundsIndex:
+		return fmt.Errorf("ERC721OutOfBoundsIndex: %s, %s", e.Index.String(), e.Owner.Hex())
+	case *inferences.Ierc721ERC721IncorrectOwner:
+		return fmt.Errorf("ERC721IncorrectOwner: owner %s, spender %s, %s", e.Owner.Hex(), e.Sender.Hex(), e.TokenId.String())
+	case *inferences.Ierc721ERC721InsufficientApproval:
+		return fmt.Errorf("ERC721InsufficientApproval: %s, %s", e.Operator.String(), e.TokenId.String())
+	case *inferences.Ierc721ERC721InvalidApprover:
+		return fmt.Errorf("ERC721InvalidApprover: %s", e.Approver.Hex())
+	case *inferences.Ierc721ERC721InvalidOperator:
+		return fmt.Errorf("ERC721InvalidOperator: %s", e.Operator.String())
+	case *inferences.Ierc721ERC721InvalidReceiver:
+		return fmt.Errorf("ERC721InvalidReceiver:  %s", e.Receiver.Hex())
+	case *inferences.Ierc721ERC721InvalidSender:
+		return fmt.Errorf("ERC721InvalidSender: %s", e.Sender.String())
+	case *inferences.Ierc721ERC721NonexistentToken:
+		return fmt.Errorf("ERC721NonexistentToken: %s", e.TokenId.String())
+	case *inferences.Ierc721OwnerQueryForNonexistentToken:
+		return errors.New("OwnerQueryForNonexistentToken")
+	case *inferences.Ierc721ApprovalCallerNotOwnerNorApproved:
+		return errors.New("ApprovalCallerNotOwnerNorApproved")
+	case *inferences.Ierc721ApprovalQueryForNonexistentToken:
+		return errors.New("ApprovalQueryForNonexistentToken")
+	case *inferences.Ierc721BalanceQueryForZeroAddress:
+		return errors.New("BalanceQueryForZeroAddress")
+	case *inferences.Ierc721MintToZeroAddress:
+		return errors.New("MintToZeroAddress")
+	case *inferences.Ierc721MintZeroQuantity:
+		return errors.New("MintZeroQuantity")
+	case *inferences.Ierc721TransferCallerNotOwnerNorApproved:
+		return errors.New("TransferCallerNotOwnerNorApproved")
+	case *inferences.Ierc721TransferFromIncorrectOwner:
+		return errors.New("TransferFromIncorrectOwner")
+	case *inferences.Ierc721TransferToNonERC721ReceiverImplementer:
+		return errors.New("TransferToNonERC721ReceiverImplementer")
+	case *inferences.Ierc721TransferToZeroAddress:
+		return errors.New("TransferToZeroAddress")
+	case *inferences.Ierc721URIQueryForNonexistentToken:
+		return errors.New("URIQueryForNonexistentToken")
+	case *inferences.Ierc721MintERC2309QuantityExceedsLimit:
+		return errors.New("MintERC2309QuantityExceedsLimit")
+	case *inferences.Ierc721OwnershipNotInitializedForExtraData:
+		return errors.New("OwnershipNotInitializedForExtraData")
+	default:
+		return nil
+	}
 }
