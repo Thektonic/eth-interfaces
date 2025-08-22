@@ -1,7 +1,6 @@
 package base
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -41,13 +40,18 @@ func GenCallError(
 	unpackError func(raw []byte) (any, error),
 ) func(field string, err error) error {
 	return func(field string, err error) error {
+		if err == nil {
+			return nil
+		}
 		errBytes, success := ethclient.RevertErrorData(err)
 		if success {
-			data, err := unpackError(errBytes)
-			if err != nil {
-				return errors.New("failed to unpack error data")
+			data, unpackErr := unpackError(errBytes)
+			if unpackErr != nil {
+				return fmt.Errorf("failed to unpack error data: %w", unpackErr)
 			}
-			return WrapCallError(kind, field, buildError(data))
+			if customErr := buildError(data); customErr != nil {
+				return WrapCallError(kind, field, customErr)
+			}
 		}
 		return err
 	}
