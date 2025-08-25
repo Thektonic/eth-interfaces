@@ -6,8 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// TxOptsBuilderFunc defines a function type that returns a transaction options builder.
-type TxOptsBuilderFunc func() (*bind.TransactOpts, error)
+// TxOptsMiddlewareFunc defines a function type that returns a transaction options builder.
+type TxOptsMiddlewareFunc func(*bind.TransactOpts) (*bind.TransactOpts, error)
 
 // Transact is an abstraction for the bind.Transact function, allowing for a more generic transaction interface.
 func Transact[T any](

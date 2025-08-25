@@ -30,7 +30,7 @@ type Interactions struct {
 	pk       *ecdsa.PrivateKey
 	disperse *inferences.Disperse
 	explorer *string
-	TxOptsFn transaction.TxOptsBuilderFunc
+	TxOptsFn transaction.TxOptsMiddlewareFunc
 	safe     bool
 }
 
@@ -66,7 +66,7 @@ func NewBaseInteractions(
 	pk *ecdsa.PrivateKey,
 	explorer *string,
 	safe bool,
-	txOptsFn ...transaction.TxOptsBuilderFunc,
+	txOptsFn ...transaction.TxOptsMiddlewareFunc,
 ) *Interactions {
 	ctx := context.TODO()
 	_, err := client.BlockNumber(ctx)
@@ -80,7 +80,7 @@ func NewBaseInteractions(
 		log.Fatal("error casting public key to ECDSA")
 	}
 
-	var txOptFn transaction.TxOptsBuilderFunc
+	var txOptFn transaction.TxOptsMiddlewareFunc
 
 	if len(txOptsFn) != 0 {
 		txOptFn = txOptsFn[0]
@@ -98,10 +98,6 @@ func (i *Interactions) SetDisperse(_ string) error {
 
 // BaseTxSetup sets up transaction options (nonce, gas price, chain ID, etc.) for sending a transaction.
 func (i *Interactions) BaseTxSetup() (*bind.TransactOpts, error) {
-	if i.TxOptsFn != nil {
-		return i.TxOptsFn()
-	}
-
 	gasPrice, err := i.Client.SuggestGasPrice(i.Ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to suggest gas price: %v", err)
@@ -127,7 +123,11 @@ func (i *Interactions) BaseTxSetup() (*bind.TransactOpts, error) {
 	opts.From = i.Address
 	opts.Nonce = new(big.Int).SetUint64(nonce)
 
-	return opts, nil
+	if i.TxOptsFn != nil {
+		return i.TxOptsFn(opts)
+	} else {
+		return opts, nil
+	}
 }
 
 // BaseCallSetup returns the call options for read-only contract operations.
@@ -171,21 +171,18 @@ func (i *Interactions) Disperse(addresses []common.Address, totalValue uint) (st
 	if i.disperse == nil {
 		return FailedTx(fmt.Errorf("disperse contract not initialized"))
 	}
-	opts, err := i.BaseTxSetup()
-	if err != nil {
-		return FailedTx(err)
-	}
+
 	amounts := []*big.Int{}
 	for range addresses {
 		amounts = append(amounts, new(big.Int).SetUint64(uint64(totalValue)/uint64(len(addresses))))
 	}
 
-	opts.Value = new(big.Int).SetUint64(uint64(totalValue))
-
 	originalTxOptsFn := i.TxOptsFn
-	i.TxOptsFn = func() (*bind.TransactOpts, error) {
+	i.TxOptsFn = func(opts *bind.TransactOpts) (*bind.TransactOpts, error) {
+		opts.Value = new(big.Int).SetUint64(uint64(totalValue))
 		return opts, nil
 	}
+
 	defer func() { i.TxOptsFn = originalTxOptsFn }()
 
 	fmt.Println("Dispersing...")

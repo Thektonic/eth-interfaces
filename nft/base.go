@@ -45,7 +45,7 @@ func NewERC721Interactions(
 	baseInteractions *base.Interactions,
 	address common.Address,
 	signatures []BaseNFTSignature,
-	transactOps ...*bind.TransactOpts,
+	transactOpsMiddleware ...transaction.TxOptsMiddlewareFunc,
 ) (*ERC721Interactions, error) {
 	var converted []hex.Signature
 	for _, sig := range signatures {
@@ -73,13 +73,11 @@ func NewERC721Interactions(
 		callError,
 	}
 
-	if len(transactOps) > 0 {
-		if transactOps[0] == nil {
+	if len(transactOpsMiddleware) > 0 {
+		if transactOpsMiddleware[0] == nil {
 			return nil, fmt.Errorf("transactOpts cannot be nil")
 		}
-		erc721Interactions.TxOptsFn = func() (*bind.TransactOpts, error) {
-			return transactOps[0], nil
-		}
+		erc721Interactions.TxOptsFn = transactOpsMiddleware[0]
 	}
 
 	return erc721Interactions, nil

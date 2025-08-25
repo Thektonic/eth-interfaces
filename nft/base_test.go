@@ -14,6 +14,7 @@ import (
 	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/nft"
 	"github.com/Thektonic/eth-interfaces/testingtools"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
@@ -416,7 +417,11 @@ func Test_GetBalance(t *testing.T) {
 	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
-	nft, err := nft.NewERC721Interactions(base, *contractAddress, []nft.BaseNFTSignature{nft.BalanceOf}, auth)
+	nft, err := nft.NewERC721Interactions(base,
+		*contractAddress,
+		[]nft.BaseNFTSignature{nft.BalanceOf},
+		func(to *bind.TransactOpts) (*bind.TransactOpts, error) { return auth, nil },
+	)
 	assert.Nil(t, err)
 
 	balance, err := nft.GetBalance()
@@ -497,12 +502,12 @@ func Test_TransferFirstOwnedTo(t *testing.T) {
 			} else {
 				baseInteractions = base.NewBaseInteractions(backend.Client(), privKey, nil, false)
 			}
-			nftInterface, err = nft.NewERC721Interactions(
-				baseInteractions,
+			nftInterface, err := nft.NewERC721Interactions(baseInteractions,
 				*contractAddress,
-				[]nft.BaseNFTSignature{nft.TransferFrom, nft.OwnerOf},
-				auth,
+				[]nft.BaseNFTSignature{nft.BalanceOf},
+				func(to *bind.TransactOpts) (*bind.TransactOpts, error) { return auth, nil },
 			)
+
 			assert.Nil(t, err)
 
 			_, err = nftInterface.TransferFirstOwnedTo(tt.args.To)

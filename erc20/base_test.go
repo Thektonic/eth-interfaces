@@ -13,6 +13,7 @@ import (
 	"github.com/Thektonic/eth-interfaces/hex"
 	"github.com/Thektonic/eth-interfaces/inferences"
 	"github.com/Thektonic/eth-interfaces/testingtools"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
@@ -400,7 +401,11 @@ func Test_GetBalance(t *testing.T) {
 	}()
 
 	base := base.NewBaseInteractions(backend.Client(), privKey, nil, false)
-	token, err := erc20.NewIERC20Interactions(base, *contractAddress, []erc20.BaseERC20Signature{erc20.BalanceOf}, auth)
+	token, err := erc20.NewIERC20Interactions(base,
+		*contractAddress,
+		[]erc20.BaseERC20Signature{erc20.BalanceOf},
+		func(to *bind.TransactOpts) (*bind.TransactOpts, error) { return auth, nil },
+	)
 	assert.Nil(t, err)
 
 	balance, err := token.GetBalance()

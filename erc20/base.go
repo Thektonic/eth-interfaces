@@ -48,7 +48,7 @@ func NewIERC20Interactions(
 	baseInteractions *base.Interactions,
 	address common.Address,
 	signatures []BaseERC20Signature,
-	transactOps ...*bind.TransactOpts,
+	transactOps ...transaction.TxOptsMiddlewareFunc,
 ) (*Interactions, error) {
 	var converted []hex.Signature
 	for _, sig := range signatures {
@@ -81,9 +81,7 @@ func NewIERC20Interactions(
 		if transactOps[0] == nil {
 			return nil, fmt.Errorf("transactOpts cannot be nil")
 		}
-		ierc20Asession.TxOptsFn = func() (*bind.TransactOpts, error) {
-			return transactOps[0], nil
-		}
+		ierc20Asession.TxOptsFn = transactOps[0]
 	}
 
 	return ierc20Asession, nil
